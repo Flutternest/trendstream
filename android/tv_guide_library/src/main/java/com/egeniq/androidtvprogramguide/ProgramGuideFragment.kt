@@ -17,7 +17,10 @@
 package com.egeniq.androidtvprogramguide
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.content.res.Resources
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -25,6 +28,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.ViewAnimator
@@ -37,6 +41,9 @@ import androidx.fragment.app.Fragment
 import androidx.leanback.widget.BaseGridView
 import androidx.leanback.widget.setFocusOutAllowed
 import androidx.leanback.widget.setFocusOutSideAllowed
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
@@ -49,6 +56,8 @@ import com.egeniq.androidtvprogramguide.util.FilterOption
 import com.egeniq.androidtvprogramguide.util.FixedLocalDateTime
 import com.egeniq.androidtvprogramguide.util.FixedZonedDateTime
 import com.egeniq.androidtvprogramguide.util.ProgramGuideUtil
+import com.egeniq.androidtvprogramguide.youtube_player.CustomUiActivity
+import com.egeniq.androidtvprogramguide.youtube_player.YoutubePlayerActivity
 import org.threeten.bp.Instant
 import org.threeten.bp.LocalDate
 import org.threeten.bp.ZoneId
@@ -84,6 +93,9 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
 
         private val TAG: String = ProgramGuideFragment::class.java.name
     }
+
+    private var player: ExoPlayer? = null
+    private var playerView: PlayerView? = null
 
     protected val FILTER_DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -223,16 +235,19 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
                         false
                     )
+
                     USE_HUMAN_DATES && dayIndex == 0 -> FilterOption(
                         getString(R.string.programguide_day_today),
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
                         true
                     )
+
                     USE_HUMAN_DATES && dayIndex == 1 -> FilterOption(
                         getString(R.string.programguide_day_tomorrow),
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
                         false
                     )
+
                     else -> FilterOption(
                         DATE_WITH_DAY_FORMATTER.format(now.plusDays(indexLong)),
                         FILTER_DATE_FORMATTER.format(now.plusDays(indexLong)),
@@ -346,7 +361,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
      * Sets up all the components to be used by the fragment.
      */
     @Suppress("ObjectLiteralToLambda", "DEPRECATION")
-    @SuppressLint("RestrictedApi")
+    @SuppressLint("RestrictedApi", "UnsafeOptInUsageError")
     private fun setupComponents(view: View) {
         selectionRow = resources.getInteger(R.integer.programguide_selection_row)
         rowHeight =
@@ -410,7 +425,73 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         }
         val jumpToLive = view.findViewById<View>(R.id.programguide_jump_to_live)!!
         jumpToLive.setOnClickListener { autoScrollToBestProgramme() }
+
+
+        playerView = view.findViewById(R.id.idExoPlayerVIew)
+
+        // Instantiate the player.
+//        player = context?.let { ExoPlayer.Builder(it).build() }
+//        player = context?.let {ExoPlayer.Builder(it)
+//            .setMediaSourceFactory(HlsMediaSource.setLiveTargetOffsetMs(5000))
+//            .build()}
+        //create a player for playing m3u8 file
+//        player = context?.let { ExoPlayer.Builder(it).build() }
+//
+//        // Attach player to the view.
+//        playerView?.player = player
+//        // Set the media item to be played.
+////        player?.setMediaItem(MediaItem.fromUri("https://storage.googleapis.com/exoplayer-test-media-0/BigBuckBunny_320x180.mp4"))
+//        val mediaItem =
+//            MediaItem.Builder()
+//                .setUri("http://x.lamtv.tv:8080/live/test/test/130.m3u8")
+//                .setLiveConfiguration(
+//                    MediaItem.LiveConfiguration.Builder().setMaxPlaybackSpeed(1.02f).build()
+//                )
+//                .build()
+//
+//        player?.setMediaItem(mediaItem)
+//        // Prepare the player.
+//        player?.prepare()
+//        // Start the playback.
+//        player?.play()
+//        // Hide the play/pause button.
+//        playerView?.hideController()
+
+
+        view.findViewById<Button>(R.id.testVideoButton)?.let {
+//            it.setOnClickListener { openYoutubeLink("YVI6SCtVu4c"); }
+            it.setOnClickListener { onTestVideoButtonClicked("http://23.237.117.10/test-am-1080.mkv") }
+        }
+        view.findViewById<Button>(R.id.testVideoButton2)?.let {
+//            it.setOnClickListener { onTestVideoButtonClicked("https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8") }
+            it.setOnClickListener { onTestVideoButtonClicked("https://github.com/ietf-wg-cellar/matroska-test-files/raw/master/test_files/test5.mkv") }
+        }
+        view.findViewById<Button>(R.id.testVideoButton3)?.let {
+            it.setOnClickListener { onTestVideoButtonClicked("http://23.237.117.10/testmax1080.mkv") }
+        }
+        view.findViewById<Button>(R.id.testVideoButton4)?.let {
+            it.setOnClickListener { onTestVideoButtonClicked("https://mazwai.com/videvo_files/video/free/2016-01/small_watermarked/rio_from_above_preview.webm") }
+        }
+        view.findViewById<Button>(R.id.testVideoButton5)?.let {
+            it.setOnClickListener {
+                val intent = Intent(context, YoutubePlayerActivity::class.java)
+//                val intent = Intent(context, CustomUiActivity::class.java)
+                startActivity(intent)
+            }
+        }
     }
+
+    fun openYoutubeLink(youtubeID: String) {
+        val intentApp = Intent(Intent.ACTION_VIEW, Uri.parse("vnd.youtube:" + youtubeID))
+        val intentBrowser = Intent(Intent.ACTION_VIEW, Uri.parse("http://www.youtube.com/watch?v=" + youtubeID))
+        try {
+            this.startActivity(intentApp)
+        } catch (ex: ActivityNotFoundException) {
+            this.startActivity(intentBrowser)
+        }
+    }
+
+    abstract fun onTestVideoButtonClicked(url: String)
 
     /**
      * Called when the fragment view has been created. We initialize some of our views here.
@@ -553,6 +634,9 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
             progressUpdateHandler.removeCallbacks(progressUpdateRunnable)
             progressUpdateHandler.post(progressUpdateRunnable)
         }
+        //seek to the latest position in the live stream
+        player?.seekToDefaultPosition()
+        player?.play()
     }
 
     /**
@@ -563,6 +647,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         if (DISPLAY_SHOW_PROGRESS) {
             progressUpdateHandler.removeCallbacks(progressUpdateRunnable)
         }
+        player?.pause()
     }
 
     /**
@@ -572,6 +657,12 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
         programGuideManager.listeners.remove(this)
         programGuideGrid.scheduleSelectionListener = null
         programGuideGrid.childFocusListener = null
+
+        if (player != null) {
+            if (player?.isCommandAvailable(ExoPlayer.COMMAND_RELEASE) == true) {
+                player?.release()
+            }
+        }
         super.onDestroyView()
     }
 
@@ -743,6 +834,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 alpha = 1f
                 contentAnimator?.displayedChild = 2
             }
+
             is State.Error -> {
                 alpha = 0f
                 if (state.errorMessage == null) {
@@ -752,6 +844,7 @@ abstract class ProgramGuideFragment<T> : Fragment(), ProgramGuideManager.Listene
                 }
                 contentAnimator?.displayedChild = 1
             }
+
             else -> {
                 alpha = 0f
                 contentAnimator?.displayedChild = 0

@@ -1,23 +1,32 @@
+import 'package:android_id/android_id.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/constants/paths.dart';
+import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/shared_widgets/button.dart';
 import 'package:latest_movies/core/shared_widgets/default_app_padding.dart';
 import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
 import 'package:latest_movies/core/utilities/app_utility.dart';
 import 'package:latest_movies/features/movies/enums/sidebar_options.dart';
+import 'package:latest_movies/features/movies/views/movies_dashboard/search/live_channel_search_page.dart';
 import 'package:latest_movies/features/movies/views/movies_dashboard/search/search_page.dart';
 import 'package:latest_movies/features/movies/widgets/movies_grid.dart';
 import 'package:latest_movies/features/movies/widgets/tvshows_grid.dart';
+import 'package:latest_movies/features/movies/widgets/tvshows_grid_v3.dart';
+import 'package:latest_movies/features/settings/settings_page.dart';
 import 'package:latest_movies/features/sports/views/sports_view.dart';
 
 import '../../../../core/utilities/design_utility.dart';
+import '../../controllers/dashboard_sidebar_expanded_provider.dart';
 import '../../controllers/side_bar_controller.dart';
 import '../../controllers/update_dowload_providers/update_download_manager_provider.dart';
 import '../../widgets/adult_grid.dart';
 import '../../widgets/dashboard_sidebar.dart';
+import '../../widgets/movies_v2_grid.dart';
+import '../../widgets/movies_v3_grid.dart';
 
 class HomeView extends HookConsumerWidget {
   const HomeView({super.key});
@@ -29,6 +38,11 @@ class HomeView extends HookConsumerWidget {
     final isMounted = useIsMounted();
     final shouldReAskForUpdate = useState(false);
     final backCounter = useRef(0);
+
+    final isSidebarExpanded = ref.watch(dashboardSidebarStatusProvider) ==
+        DashboardSidebarStatus.expanded;
+
+    final androidId = useMemoized(() => const AndroidId().getId());
 
     useEffect(() {
       Future.microtask(() async {
@@ -59,7 +73,8 @@ class HomeView extends HookConsumerWidget {
         if (backCounter.value == 0) {
           backCounter.value++;
           AppUtils.showSnackBar(context,
-              message: "Press back again to exit the app", color: Colors.white);
+              message: context.localisations.exitAppConfirmation,
+              color: Colors.white);
           Future.delayed(const Duration(seconds: 3), () {
             backCounter.value = 0;
           });
@@ -77,16 +92,26 @@ class HomeView extends HookConsumerWidget {
               // horizontalSpaceSmall,
               // const Text("Latest Movies"),
               const Spacer(),
+              FutureBuilder(
+                future: androidId,
+                builder: (context, snapshot) {
+                  return Text(
+                    "UID: ${snapshot.hasData ? snapshot.data : "###"}",
+                    style: const TextStyle(fontSize: 12),
+                  );
+                },
+              ),
               Visibility(
                 visible: showUpdatePrompt.value,
                 child: Row(children: [
+                  horizontalSpaceMedium,
                   Text(
-                    "New Update Available v${FirebaseRemoteConfig.instance.getString('latest_version_code')} #${FirebaseRemoteConfig.instance.getInt('latest_build_number')}",
+                    "${context.localisations.newUpdateAvailable} v${FirebaseRemoteConfig.instance.getString('latest_version_code')} #${FirebaseRemoteConfig.instance.getInt('latest_build_number')}",
                     style: const TextStyle(fontSize: 12),
                   ),
                   horizontalSpaceSmall,
                   AppButton(
-                    text: "Download",
+                    text: context.localisations.download,
                     onTap: () {
                       ref
                           .read(updateDownloadManagerProvider)
@@ -100,8 +125,9 @@ class HomeView extends HookConsumerWidget {
         ),
         body: Row(
           children: <Widget>[
-            Expanded(
-                flex: 2,
+            SizedBox(
+                height: double.infinity,
+                width: isSidebarExpanded ? 200 : 55,
                 child: FocusTraversalGroup(child: const DashboardSideBar())),
             Expanded(
               flex: 10,
@@ -112,24 +138,26 @@ class HomeView extends HookConsumerWidget {
                       return const MoviesGrid();
                     case SidebarOptions.tvShows:
                       return const TvShowsGrid();
+                    case SidebarOptions.tvShowsV3:
+                      return const TvShowsGridV3();
                     case SidebarOptions.adult:
                       return const AdultGrid();
                     case SidebarOptions.search:
                       return const SearchPage();
+                    case SidebarOptions.liveChannelsSearch:
+                      return const LiveChannelSearchPage();
                     case SidebarOptions.sports:
                       return const SportsPage();
+                    case SidebarOptions.apiMovies:
+                      return const MoviesV2Grid();
+                    case SidebarOptions.apiMoviesV3:
+                      return const MoviesV3Grid();
+                    case SidebarOptions.settings:
+                      return const SettingsPage();
                     default:
                       return const MoviesGrid();
                   }
                 }),
-
-                // IndexedStack(
-                //   index: sidebarState.sidebarOptions.index,
-                //   children: [
-                //     FocusTraversalGroup(child: const MoviesGrid()),
-                //     const SearchPage(),
-                //   ],
-                // ),
               ),
             ),
           ],

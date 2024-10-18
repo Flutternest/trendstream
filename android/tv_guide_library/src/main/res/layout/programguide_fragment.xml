@@ -68,9 +68,11 @@
     <ImageView
         android:id="@+id/programguide_detail_image"
         style="@style/ProgramGuide.Image.Detail"
+        android:layout_width="150dp"
+        android:layout_height="80dp"
         android:layout_marginStart="@dimen/programguide_page_left_padding"
-        android:contentDescription="@string/programguide_content_description_large_thumbnail"
         android:background="@drawable/programguide_tile_placeholder"
+        android:contentDescription="@string/programguide_content_description_large_thumbnail"
         android:src="@drawable/programguide_icon_placeholder"
         app:layout_constraintBottom_toBottomOf="@id/bottom_detail"
         app:layout_constraintStart_toStartOf="parent"
@@ -78,7 +80,7 @@
 
     <TextView
         android:id="@+id/programguide_detail_title"
-        style="@style/ProgramGuide.Text.Detail.Title"
+        style="@style/ProgramGuide.Text.Detail.TitleMedium"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:gravity="start"
@@ -143,8 +145,10 @@
         android:outAnimation="@android:anim/fade_out"
         app:layout_constraintBottom_toBottomOf="@id/background"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/background">
+        app:layout_constraintTop_toTopOf="@id/background"
+        app:layout_constraintVertical_bias="0.0">
 
         <!-- Loading state -->
         <ProgressBar
@@ -241,5 +245,95 @@
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+<!--    <View-->
+<!--        android:id="@+id/live_preview"-->
+<!--        android:layout_width="180dp"-->
+<!--        android:layout_height="60dp"-->
+<!--        android:background="#000"-->
+<!--        android:layout_marginEnd="@dimen/programguide_page_left_padding"-->
+<!--        app:layout_constraintLeft_toRightOf="@id/programguide_time_of_day_filter"-->
+<!--        app:layout_constraintEnd_toEndOf="parent"-->
+<!--        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"-->
+<!--        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"-->
+<!--        />-->
+    <Button
+        android:id="@+id/testVideoButton"
+        android:text="Test Video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#fff"
+        android:background="@drawable/livepreview_focus_background"
+        android:layout_marginLeft="30dp"
+        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintStart_toEndOf="@id/programguide_time_of_day_filter"
+        app:layout_constraintTop_toTopOf="@id/programguide_top_margin" />
+
+    <Button
+        android:id="@+id/testVideoButton2"
+        android:text="Test Video 2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#fff"
+        android:background="@drawable/livepreview_focus_background"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintStart_toEndOf="@id/testVideoButton"
+        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"
+         />
+    <Button
+        android:id="@+id/testVideoButton3"
+        android:text="Test Video 3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#fff"
+        android:background="@drawable/livepreview_focus_background"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintStart_toEndOf="@id/testVideoButton2"
+        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"
+        />
+    <Button
+        android:id="@+id/testVideoButton4"
+        android:text="Test Video 4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#fff"
+        android:background="@drawable/livepreview_focus_background"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintStart_toEndOf="@id/testVideoButton3"
+        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"
+        />
+    <Button
+        android:id="@+id/testVideoButton5"
+        android:text="Youtube Player"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#fff"
+        android:background="@drawable/livepreview_focus_background"
+        android:layout_marginLeft="10dp"
+        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintStart_toEndOf="@id/testVideoButton4"
+        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"
+        />
+
+
+
+    <!--Widget for exoplayer view-->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/idExoPlayerVIew"
+        android:layout_width="106.66666667dp"
+        android:layout_height="60dp"
+        app:show_buffering="never"
+        app:use_controller="false"
+        android:layout_marginEnd="@dimen/programguide_page_left_padding"
+        app:layout_constraintLeft_toRightOf="@id/testVideoButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/programguide_time_row"
+        app:layout_constraintTop_toTopOf="@id/programguide_top_margin"
+    />
+
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

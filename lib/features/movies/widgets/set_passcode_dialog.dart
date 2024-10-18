@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
+import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
@@ -27,9 +28,8 @@ class SetPasscodeDialog extends HookConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text("Set a passcode to access adult content"),
+              Text(context.localisations.setAdultContentPassDesc),
               verticalSpaceRegular,
-
               Center(
                 child: PinCodeTextField(
                   appContext: context,
@@ -63,34 +63,37 @@ class SetPasscodeDialog extends HookConsumerWidget {
                   onChanged: (String value) {},
                 ),
               ),
-              Center(
-                child: NumericKeyboard(
-                  autofocus: true,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  maxLength: 4,
-                  onValueChanged: (newVal) {
-                    passcodeCtrl.text = newVal;
-                  },
-                  onDoneTap: () async {
-                    if (passcodeCtrl.text.isEmpty) {
-                      return;
-                    }
+              Expanded(
+                child: FittedBox(
+                  child: NumericKeyboard(
+                    autofocus: true,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    maxLength: 4,
+                    onValueChanged: (newVal) {
+                      passcodeCtrl.text = newVal;
+                    },
+                    onDoneTap: () async {
+                      if (passcodeCtrl.text.isEmpty) {
+                        return;
+                      }
 
-                    final navigator = Navigator.of(context);
+                      final navigator = Navigator.of(context);
 
-                    await ref
-                        .read(sharedPreferencesServiceProvider)
-                        .sharedPreferences
-                        .setString(
-                            SharedPreferencesService.adultContentPasscode,
-                            passcodeCtrl.text);
-                    await ref
-                        .read(sharedPreferencesServiceProvider)
-                        .sharedPreferences
-                        .setBool(SharedPreferencesService.isPasscodeSet, true);
+                      await ref
+                          .read(sharedPreferencesServiceProvider)
+                          .sharedPreferences
+                          .setString(
+                              SharedPreferencesService.adultContentPasscode,
+                              passcodeCtrl.text);
+                      await ref
+                          .read(sharedPreferencesServiceProvider)
+                          .sharedPreferences
+                          .setBool(
+                              SharedPreferencesService.isPasscodeSet, true);
 
-                    navigator.pop(true);
-                  },
+                      navigator.pop(true);
+                    },
+                  ),
                 ),
               ),
               // AppButton(

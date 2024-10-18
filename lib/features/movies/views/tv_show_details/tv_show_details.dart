@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
+import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
@@ -15,7 +16,6 @@ import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/movies/models/season_details_args/season_details_args.dart';
 import 'package:latest_movies/features/movies/models/tv_show_details/season.dart';
 import 'package:latest_movies/features/movies/models/tv_show_details/tv_show_details.dart';
-import 'package:latest_movies/features/movies/widgets/season_episodes_list.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/config/config.dart';
 import '../../../../core/shared_widgets/button.dart';
@@ -24,7 +24,9 @@ import '../../../../core/utilities/debouncer.dart';
 import '../../controllers/tv_show_season_details_provider.dart';
 import '../../controllers/tv_shows_provider.dart';
 import '../../models/season_details/episode.dart';
-import '../../repositories/tv_shows_repository.dart';
+import '../../models/tv_show_details/spoken_language.dart';
+import '../movie_details/all_cast_crew_view.dart';
+import '../movie_details/movie_details.dart' as md;
 
 class TvShowDetailsView extends HookConsumerWidget {
   const TvShowDetailsView({super.key});
@@ -35,23 +37,56 @@ class TvShowDetailsView extends HookConsumerWidget {
         useMemoized(() => ModalRoute.of(context)!.settings.arguments as int);
     final tvShowDetailsAsync = ref.watch(tvShowDetailsProvider(showId));
 
-    final posterContainerHeight = MediaQuery.of(context).size.height * 0.7;
-    final selectedSeason = useState<Season?>(null);
+    final posterContainerHeight = MediaQuery.of(context).size.height * 0.85;
+
+    // States
+    final uniqueMainCrew = useState(<String, String>{});
+
+    // Function to run some code after movie is fetched. This will only be called once the movie is changed and not on every build method
+    useEffect(() {
+      tvShowDetailsAsync.whenData((tvShowDetails) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final mainCrew = tvShowDetails.credits?.crew
+                  ?.where((c) =>
+                      c.job == "Director" ||
+                      c.job == "Producer" ||
+                      c.job == "Creator" ||
+                      c.job == "Writer")
+                  .toList() ??
+              [];
+
+          // Create a map to store unique names and their corresponding jobs
+          final uniqueNames = <String, String>{};
+
+          // Iterate over the crew members and merge their jobs for duplicate names
+          for (final crewMember in mainCrew) {
+            if (uniqueNames.length == 5) break;
+            final name = crewMember.name!;
+            final job = crewMember.job ?? "N/A";
+
+            if (uniqueNames.containsKey(name)) {
+              // Merge the job with the existing entry
+              uniqueNames[name] = '${uniqueNames[name]}, $job';
+            } else {
+              // Add the new entry
+              uniqueNames[name] = job;
+            }
+          }
+
+          uniqueMainCrew.value = uniqueNames;
+        });
+      });
+      return null;
+    }, [tvShowDetailsAsync]);
 
     return Scaffold(
       body: tvShowDetailsAsync.when(
         data: (show) {
-          if ((show.seasons?.isNotEmpty ?? false) &&
-              selectedSeason.value == null) {
-            selectedSeason.value = show.seasons!.firstWhere(
-                (s) => s.seasonNumber == 1,
-                orElse: () => show.seasons!.first);
-          }
           return DecoratedBox(
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage(
-                  "${Configs.baseImagePath}${show.posterPath}",
+                  "${Configs.largeBaseImagePath}${show.posterPath}",
                 ),
                 fit: BoxFit.cover,
               ),
@@ -66,7 +101,7 @@ class TvShowDetailsView extends HookConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.all(16.0),
+                          padding: const EdgeInsets.symmetric(horizontal: 40.0),
                           child: TextButton.icon(
                               onPressed: () {
                                 Debouncer(
@@ -80,7 +115,7 @@ class TvShowDetailsView extends HookConsumerWidget {
                                 foregroundColor: Colors.white,
                               ),
                               icon: const Icon(Icons.arrow_back),
-                              label: const Text("Back")),
+                              label: Text(context.localisations.back)),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 40.0),
@@ -90,7 +125,7 @@ class TvShowDetailsView extends HookConsumerWidget {
                             children: [
                               SizedBox(
                                 height: posterContainerHeight,
-                                width: 250,
+                                // width: 250,
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: DecoratedBox(
@@ -106,7 +141,7 @@ class TvShowDetailsView extends HookConsumerWidget {
                                     ),
                                     child: AppImage(
                                       imageUrl:
-                                          "${Configs.baseImagePath}${show.posterPath}",
+                                          "${Configs.largeBaseImagePath}${show.posterPath}",
                                       //todo: add a not available image in case there's no image
                                     ),
                                   ),
@@ -117,23 +152,26 @@ class TvShowDetailsView extends HookConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      validString(show.name),
-                                      style: const TextStyle(
-                                        fontSize: 24.0,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+                                    FittedBox(
+                                      child: Text(
+                                        validString(show.name),
+                                        style: const TextStyle(
+                                          fontSize: 24.0,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 5),
-                                    Text(
-                                      validString(show.tagline),
-                                      style: const TextStyle(
-                                        fontSize: 14.0,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w300,
+                                    if (show.tagline?.isNotEmpty ?? false)
+                                      Text(
+                                        validString(show.tagline),
+                                        style: const TextStyle(
+                                          fontSize: 14.0,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w300,
+                                        ),
                                       ),
-                                    ),
                                     const SizedBox(height: 20),
                                     Row(
                                       crossAxisAlignment:
@@ -177,7 +215,7 @@ class TvShowDetailsView extends HookConsumerWidget {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          "${show.genres?.map((e) => e.name).join(" / ")} | ${show.spokenLanguages?.map((e) => e.name).join(", ")} | ${show.numberOfSeasons} ${show.numberOfSeasons == 1 ? "Season" : "Seasons"}",
+                                          "${show.genres?.map((e) => e.name).join(" / ")} | ${show.numberOfSeasons} ${show.numberOfSeasons == 1 ? "Season" : "Seasons"}",
                                           style: TextStyle(
                                             fontSize: 14.0,
                                             color: Colors.grey[500],
@@ -187,47 +225,121 @@ class TvShowDetailsView extends HookConsumerWidget {
                                       ],
                                     ),
                                     const SizedBox(height: 20),
-                                    Text(
-                                      validString(show.overview),
-                                      style: const TextStyle(
-                                        fontSize: 14.0,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w300,
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.info_outline,
+                                            color: Colors.grey, size: 14),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            context.localisations
+                                                .overviewTextClickDesc,
+                                            style: const TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w300,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    verticalSpaceTiny,
+                                    Expanded(
+                                      child: InkWell(
+                                        onTap: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) {
+                                              return AlertDialog(
+                                                backgroundColor:
+                                                    kBackgroundColor,
+                                                title: Text(
+                                                  context
+                                                      .localisations.overview,
+                                                  style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold),
+                                                ),
+                                                content: SingleChildScrollView(
+                                                  child: Text(
+                                                    validString(show.overview),
+                                                    style: const TextStyle(
+                                                      fontSize: 14.0,
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w300,
+                                                    ),
+                                                  ),
+                                                ),
+                                                actions: [
+                                                  AppButton(
+                                                    autofocus: true,
+                                                    text: context
+                                                        .localisations.close,
+                                                    onTap: () {
+                                                      Navigator.pop(context);
+                                                    },
+                                                  ),
+                                                ],
+                                              );
+                                            },
+                                          );
+                                        },
+                                        child: Builder(builder: (context) {
+                                          final hasPrimaryFocus =
+                                              Focus.of(context).hasPrimaryFocus;
+                                          return Container(
+                                            decoration: hasPrimaryFocus
+                                                ? BoxDecoration(
+                                                    color: kPrimaryAccentColor
+                                                        .withOpacity(.2),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
+                                                  )
+                                                : null,
+                                            child: Text(
+                                              validString(show.overview),
+                                              style: const TextStyle(
+                                                fontSize: 14.0,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w300,
+                                                overflow: TextOverflow.fade,
+                                              ),
+                                            ),
+                                          );
+                                        }),
                                       ),
                                     ),
-                                    const Expanded(child: SizedBox()),
+                                    const SizedBox(height: 20),
+                                    Wrap(
+                                      spacing: 20,
+                                      runSpacing: 10,
+                                      children: [
+                                        ...uniqueMainCrew.value.entries.map(
+                                            (entry) => md.CreatorItem(
+                                                name: entry.key,
+                                                job: entry.value)),
+                                      ],
+                                    ),
+                                    verticalSpaceSmall,
                                     Row(
                                       children: [
                                         Expanded(
-                                            child: _buildWatchButtons(show)),
+                                            child: _buildWatchButtons(
+                                                context, show)),
                                         AppButton(
                                           autofocus: true,
-                                          text: selectedSeason.value?.name ??
-                                              "Season 1",
+                                          text:
+                                              context.localisations.allSeasons,
                                           onTap: () async {
-                                            final seasonOrNull =
-                                                await showDialog(
-                                              context: context,
-                                              builder: (context) =>
-                                                  SeasonPickerDialog(
-                                                seasons: show.seasons ?? [],
-                                                selectedSeasonId:
-                                                    selectedSeason.value?.id ??
-                                                        -1,
-                                                tvShowId: show.id!,
-                                              ),
+                                            AppRouter.navigateToPage(
+                                              Routes.tvShowSeasons,
+                                              arguments: show.id,
                                             );
-                                            if (seasonOrNull != null) {
-                                              switch (
-                                                  seasonOrNull.runtimeType) {
-                                                case Season:
-                                                  selectedSeason.value =
-                                                      seasonOrNull;
-                                                  break;
-                                                default:
-                                              }
-                                              log("Selected season: ${seasonOrNull.name}");
-                                            }
+                                            return;
                                           },
                                           prefix: const Icon(
                                             Icons.movie_creation_rounded,
@@ -242,15 +354,226 @@ class TvShowDetailsView extends HookConsumerWidget {
                             ],
                           ),
                         ),
-                        verticalSpaceLarge,
-                        ProviderScope(overrides: [
-                          currentSeasonDetailsProvider.overrideWithValue(
-                            ref.watch(seasonDetailsProvider(SeasonDetailsArgs(
-                              show.id!,
-                              selectedSeason.value!.seasonNumber!,
-                            ))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 40),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              verticalSpaceMedium,
+                              Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.localisations.cast,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    verticalSpaceMedium,
+                                    Builder(builder: (context) {
+                                      // Get the screen width
+                                      double screenWidth =
+                                          MediaQuery.of(context).size.width;
+                                      double itemWidth =
+                                          150; // Replace this with the actual width of your items
+
+                                      int itemCount = min(
+                                          (show.credits?.cast?.length ?? 0) + 1,
+                                          screenWidth ~/ itemWidth);
+
+                                      return SizedBox(
+                                        height: 230,
+                                        child: Row(
+                                          children: List.generate(
+                                            itemCount,
+                                            (index) {
+                                              return Builder(
+                                                builder: (context) {
+                                                  if (index == itemCount - 1) {
+                                                    return Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              16.0),
+                                                      child: TextButton.icon(
+                                                          onPressed: () {
+                                                            AppRouter.navigateToPage(
+                                                                Routes
+                                                                    .allMovieCastAndCrew,
+                                                                arguments: AllClassAndCrewArgs(
+                                                                    credits: show
+                                                                        .credits!,
+                                                                    backdropPath:
+                                                                        show.backdropPath!));
+                                                          },
+                                                          style: TextButton
+                                                              .styleFrom(
+                                                            foregroundColor:
+                                                                Colors.white,
+                                                          ),
+                                                          icon: const Icon(Icons
+                                                              .arrow_forward),
+                                                          label: Text(context
+                                                              .localisations
+                                                              .viewAll)),
+                                                    );
+                                                  }
+                                                  final cast = show
+                                                      .credits?.cast?[index];
+                                                  return md.CastTileV1(
+                                                      name: cast?.name,
+                                                      character:
+                                                          cast?.character,
+                                                      profilePath:
+                                                          cast?.profilePath);
+                                                },
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      );
+                                    }),
+
+                                    // SizedBox(
+                                    //   height: 230,
+                                    //   child: ListView.builder(
+                                    //     scrollDirection: Axis.horizontal,
+                                    //     itemCount: min(
+                                    //             show.credits?.cast?.length ??
+                                    //                 10,
+                                    //             10) +
+                                    //         1,
+                                    //     clipBehavior: Clip.none,
+                                    //     itemBuilder: (context, index) {
+                                    //       //if item is last
+                                    //       if (index ==
+                                    //           min(
+                                    //               show.credits?.cast?.length ??
+                                    //                   10,
+                                    //               10)) {
+                                    //         return Padding(
+                                    //           padding:
+                                    //               const EdgeInsets.all(16.0),
+                                    //           child: TextButton.icon(
+                                    //               onPressed: () {
+                                    //                 AppRouter.navigateToPage(
+                                    //                     Routes
+                                    //                         .allMovieCastAndCrew,
+                                    //                     arguments:
+                                    //                         AllClassAndCrewArgs(
+                                    //                             credits: show
+                                    //                                 .credits!,
+                                    //                             backdropPath: show
+                                    //                                 .backdropPath!));
+                                    //               },
+                                    //               style: TextButton.styleFrom(
+                                    //                 foregroundColor:
+                                    //                     Colors.white,
+                                    //               ),
+                                    //               icon: const Icon(
+                                    //                   Icons.arrow_forward),
+                                    //               label:
+                                    //                   const Text("View all")),
+                                    //         );
+                                    //       }
+                                    //       final cast =
+                                    //           show.credits?.cast?[index];
+                                    //       return md.CastTile(
+                                    //           name: cast?.name,
+                                    //           character: cast?.character,
+                                    //           profilePath: cast?.profilePath);
+                                    //     },
+                                    //   ),
+                                    // ),
+                                  ]),
+                              verticalSpaceMedium,
+                              InkWell(
+                                onTap: () {},
+                                child: Builder(builder: (context) {
+                                  final hasFocus =
+                                      Focus.of(context).hasPrimaryFocus;
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        context.localisations.stats,
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      verticalSpaceMedium,
+                                      Container(
+                                        padding: const EdgeInsets.all(14.0),
+                                        decoration: BoxDecoration(
+                                          color: hasFocus
+                                              ? kPrimaryAccentColor
+                                                  .withOpacity(.5)
+                                              : kPrimaryAccentColor
+                                                  .withOpacity(.2),
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                        ),
+                                        width: double.infinity,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            md.StatsItem(
+                                              stat:
+                                                  context.localisations.status,
+                                              value: show.status ?? "N/A",
+                                            ),
+                                            verticalSpaceRegular,
+                                            md.StatsItem(
+                                              stat:
+                                                  context.localisations.network,
+                                              value:
+                                                  show.networks?.first.name ??
+                                                      "N/A",
+                                            ),
+                                            verticalSpaceRegular,
+                                            md.StatsItem(
+                                              stat: context
+                                                  .localisations.originalLang,
+                                              value: show.spokenLanguages
+                                                      ?.firstWhere(
+                                                          (element) =>
+                                                              element.iso6391 ==
+                                                              show
+                                                                  .originalLanguage,
+                                                          orElse: () =>
+                                                              const SpokenLanguage(
+                                                                  name:
+                                                                      "English"))
+                                                      .name ??
+                                                  "N/A",
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      verticalSpaceMedium
+                                    ],
+                                  );
+                                }),
+                              ),
+
+                              // Row(
+                              //   crossAxisAlignment: CrossAxisAlignment.start,
+                              //   children: [
+                              //     Expanded(
+                              //       child:,
+                              //     ),
+                              //     horizontalSpaceLarge,
+                              //     SizedBox(
+                              //       width: 200,
+                              //       child:   ),
+                              //   ],
+                              // ),
+                            ],
                           ),
-                        ], child: const SeasonEpisodesList()),
+                        ),
                       ],
                     ),
                   ),
@@ -265,14 +588,16 @@ class TvShowDetailsView extends HookConsumerWidget {
     );
   }
 
-  Row _buildWatchButtons(TvShowDetails show) {
+  Row _buildWatchButtons(BuildContext context, TvShowDetails show) {
     return Row(
       children: [
         AppButton(
           autofocus: true,
-          text: "Watch Now",
-          onTap: () {
-            AppRouter.navigateToPage(Routes.playerView);
+          text: context.localisations.watchNow,
+          onTap: () async {
+            const platform = MethodChannel('com.example.latest_movies/channel');
+            await platform.invokeMethod("navigateToPlayer");
+            // AppRouter.navigateToPage(Routes.playerView);
           },
           prefix: const Icon(
             Icons.play_circle,
@@ -289,7 +614,7 @@ class TvShowDetailsView extends HookConsumerWidget {
                 false);
 
             return AppButton(
-              text: "Watch Trailer",
+              text: context.localisations.watchTrailer,
               onTap: !hasTrailer
                   ? null
                   : () async {
@@ -301,11 +626,16 @@ class TvShowDetailsView extends HookConsumerWidget {
                         },
                       );
 
-                      if (!await launchUrl(Uri.parse(
-                          "https://youtube.com/watch?v=${firstTrailer.key}"))) {
-                        AppUtils.showSnackBar(null,
-                            message: "This TV does not support opening URLs");
-                      }
+                      const platform =
+                          MethodChannel('com.example.latest_movies/channel');
+                      await platform.invokeMethod("navigateToYoutubePlayer",
+                          {'video_id': firstTrailer.key});
+
+                      // if (!await launchUrl(Uri.parse(
+                      //     "https://youtube.com/watch?v=${firstTrailer.key}"))) {
+                      //   AppUtils.showSnackBar(null,
+                      //       message: "This TV does not support opening URLs");
+                      // }
                     },
             );
           },
@@ -346,9 +676,9 @@ class _SeasonPickerDialogState extends State<SeasonPickerDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Select Season",
-                    style: TextStyle(
+                  Text(
+                    context.localisations.selectSeason,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold),
@@ -357,7 +687,7 @@ class _SeasonPickerDialogState extends State<SeasonPickerDialog> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       AppButton(
-                        text: "View all episodes",
+                        text: context.localisations.viewAllEpisodes,
                         onTap: () {
                           AppRouter.navigateToPage(Routes.tvShowAllEpisodes,
                               arguments: widget.tvShowId);
@@ -365,7 +695,7 @@ class _SeasonPickerDialogState extends State<SeasonPickerDialog> {
                       ),
                       horizontalSpaceRegular,
                       AppButton(
-                        text: "Cancel",
+                        text: context.localisations.cancel,
                         onTap: () {
                           Navigator.of(context).pop();
                         },
@@ -413,7 +743,7 @@ class _SeasonPickerDialogState extends State<SeasonPickerDialog> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Image.network(
-                              "${Configs.baseImagePath}${season.posterPath}",
+                              "${Configs.largeBaseImagePath}${season.posterPath}",
                               width: 100,
                               height: 100,
                               errorBuilder: (context, error, stack) {
@@ -502,14 +832,14 @@ class EpisodePickerDialog extends HookConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "${selectedSeason.name} - Episodes",
+                        "${selectedSeason.name} - ${context.localisations.episodes}",
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold),
                       ),
                       AppButton(
-                        text: "Back",
+                        text: context.localisations.back,
                         onTap: () {
                           Navigator.of(context).pop();
                         },
@@ -519,7 +849,7 @@ class EpisodePickerDialog extends HookConsumerWidget {
                 ),
                 Center(
                   child: AppButton(
-                    text: "Select this season",
+                    text: context.localisations.selectSeason,
                     prefix: const Icon(Icons.arrow_forward),
                     onTap: () {
                       Navigator.pop(context, true);
@@ -546,7 +876,7 @@ class EpisodePickerDialog extends HookConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Image.network(
-                                  "${Configs.baseImagePath}${episode.stillPath}",
+                                  "${Configs.largeBaseImagePath}${episode.stillPath}",
                                   width: 100,
                                   errorBuilder: (context, error, stack) {
                                     return const SizedBox(

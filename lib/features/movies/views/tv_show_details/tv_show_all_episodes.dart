@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
+import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
@@ -42,7 +43,7 @@ class TvShowAllEpisodes extends HookConsumerWidget {
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: NetworkImage(
-                  "${Configs.baseImagePath}${show.posterPath}",
+                  "${Configs.largeBaseImagePath}${show.posterPath}",
                 ),
                 fit: BoxFit.cover,
               ),
@@ -71,7 +72,7 @@ class TvShowAllEpisodes extends HookConsumerWidget {
                                 foregroundColor: Colors.white,
                               ),
                               icon: const Icon(Icons.arrow_back),
-                              label: const Text("Back")),
+                              label: Text(context.localisations.back)),
                         ),
                         for (final Season season in (show.seasons ?? []))
                           Column(
@@ -80,7 +81,8 @@ class TvShowAllEpisodes extends HookConsumerWidget {
                             children: [
                               verticalSpaceMedium,
                               DefaultAppPadding.horizontal(
-                                child: Text("${season.name} - All Episodes",
+                                child: Text(
+                                    "${season.name} - ${context.localisations.allEpisodes}",
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium!
@@ -117,12 +119,12 @@ class TvShowAllEpisodes extends HookConsumerWidget {
     );
   }
 
-  Row _buildWatchButtons(TvShowDetails show) {
+  Row _buildWatchButtons(BuildContext context, TvShowDetails show) {
     return Row(
       children: [
         AppButton(
           autofocus: true,
-          text: "Watch Now",
+          text: context.localisations.watchNow,
           onTap: () {
             AppRouter.navigateToPage(Routes.playerView);
           },
@@ -141,7 +143,7 @@ class TvShowAllEpisodes extends HookConsumerWidget {
                 false);
 
             return AppButton(
-              text: "Watch Trailer",
+              text: context.localisations.watchTrailer,
               onTap: !hasTrailer
                   ? null
                   : () async {
@@ -156,7 +158,8 @@ class TvShowAllEpisodes extends HookConsumerWidget {
                       if (!await launchUrl(Uri.parse(
                           "https://youtube.com/watch?v=${firstTrailer.key}"))) {
                         AppUtils.showSnackBar(null,
-                            message: "This TV does not support opening URLs");
+                            message: context
+                                .localisations.tvDoesNotSupportOpeningUrlsDesc);
                       }
                     },
             );
@@ -198,15 +201,15 @@ class _SeasonPickerDialogState extends State<SeasonPickerDialog> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    "Select Season",
-                    style: TextStyle(
+                  Text(
+                    context.localisations.selectSeason,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.bold),
                   ),
                   AppButton(
-                    text: "Cancel",
+                    text: context.localisations.cancel,
                     onTap: () {
                       Navigator.of(context).pop();
                     },
@@ -252,7 +255,7 @@ class _SeasonPickerDialogState extends State<SeasonPickerDialog> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Image.network(
-                              "${Configs.baseImagePath}${season.posterPath}",
+                              "${Configs.largeBaseImagePath}${season.posterPath}",
                               width: 100,
                               height: 100,
                               errorBuilder: (context, error, stack) {
@@ -341,14 +344,14 @@ class EpisodePickerDialog extends HookConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "${selectedSeason.name} - Episodes",
+                        "${selectedSeason.name} - ${context.localisations.episodes}",
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold),
                       ),
                       AppButton(
-                        text: "Back",
+                        text: context.localisations.back,
                         onTap: () {
                           Navigator.of(context).pop();
                         },
@@ -358,7 +361,7 @@ class EpisodePickerDialog extends HookConsumerWidget {
                 ),
                 Center(
                   child: AppButton(
-                    text: "Select this season",
+                    text: context.localisations.selectSeason,
                     prefix: const Icon(Icons.arrow_forward),
                     onTap: () {
                       Navigator.pop(context, true);
@@ -385,7 +388,7 @@ class EpisodePickerDialog extends HookConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Image.network(
-                                  "${Configs.baseImagePath}${episode.stillPath}",
+                                  "${Configs.largeBaseImagePath}${episode.stillPath}",
                                   width: 100,
                                   errorBuilder: (context, error, stack) {
                                     return const SizedBox(

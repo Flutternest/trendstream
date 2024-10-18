@@ -39,6 +39,12 @@ class AppRouter {
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case Routes.splashView:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const SplashView(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
       case Routes.loginView:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const LoginView(),
@@ -63,6 +69,18 @@ class AppRouter {
           settings: settings,
           fullscreenDialog: false,
         );
+      case Routes.detailsViewV2:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const MovieDetailsViewV2(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
+      case Routes.detailsViewV3:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const MovieDetailsViewV3(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
       case Routes.playerView:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const PlayerView(),
@@ -72,6 +90,12 @@ class AppRouter {
       case Routes.tvShowDetailsView:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const TvShowDetailsView(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
+      case Routes.tvShowDetailsV3View:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const TvShowDetailsViewV3(),
           settings: settings,
           fullscreenDialog: false,
         );
@@ -96,6 +120,32 @@ class AppRouter {
       case Routes.tvShowAllEpisodes:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const TvShowAllEpisodes(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
+      case Routes.tvShowSeasons:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const TvShowSeasons(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
+      case Routes.tvShowSeasonsV3:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => TvShowSeasonsV3(
+            tvShow: settings.arguments as TvShowV3,
+          ),
+          settings: settings,
+          fullscreenDialog: false,
+        );
+      case Routes.allMovieCastAndCrew:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const AllCastAndCrewView(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
+      case Routes.allMovieCastAndCrewV3:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const AllCastAndCrewV3View(),
           settings: settings,
           fullscreenDialog: false,
         );

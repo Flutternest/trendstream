@@ -1,6 +1,7 @@
 package com.example.latest_movies
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.text.Spanned
 import android.text.SpannedString
 import android.util.Log
@@ -13,6 +14,8 @@ import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withC
 import com.egeniq.androidtvprogramguide.ProgramGuideFragment
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.player.PlayerActivity
+import com.egeniq.androidtvprogramguide.youtube_player.YoutubePlayerActivity
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers
 import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.schedulers.Schedulers
@@ -39,7 +42,7 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.SimpleProgram>() {
     data class SimpleChannel(
         override val id: String,
         override val name: Spanned?,
-        override val imageUrl: String?
+        override val imageUrl: String
     ) : ProgramGuideChannel
 
     // You can put your own data in the program class
@@ -58,11 +61,32 @@ class EpgFragment : ProgramGuideFragment<EpgFragment.SimpleProgram>() {
         }
         if (programGuideSchedule.isCurrentProgram) {
             Toast.makeText(context, "Open live player", Toast.LENGTH_LONG).show()
+            val intent = Intent(context, PlayerActivity::class.java)
+            intent.putExtra("url", "http://x.lamtv.tv:8080/live/test/test/130.m3u8")
+            startActivity(intent)
         } else {
             Toast.makeText(context, "Open detail page", Toast.LENGTH_LONG).show()
+            val intent = Intent(context, PlayerActivity::class.java)
+//            intent.putExtra("url", "http://23.237.220.42:8080/live/pruebas/pruebas/150.m3u8")
+            intent.putExtra("url", "https://cdn.media.ccc.de/congress/2019/h264-sd/36c3-11235-eng-deu-fra-36C3_Infrastructure_Review_sd.mp4")
+//            intent.putExtra("url", "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8")
+            startActivity(intent)
+//            val intent = Intent(context, PlayerActivity::class.java)
+//            val intent = Intent(context, YoutubePlayerActivity::class.java)
+//            intent.putExtra("url", "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8")
+//            intent.putExtra("url", "http://x.lamtv.tv:8080/live/test/test/130.m3u8")
+//            startActivity(intent)
         }
         // Example of how a program can be updated. You could also change the underlying program.
         updateProgram(programGuideSchedule.copy(displayTitle = programGuideSchedule.displayTitle + " [clicked]"))
+    }
+
+    override fun onTestVideoButtonClicked(url: String) {
+//        val intent = Intent(context, LivePreviewActivity::class.java)
+        val intent = Intent(context, PlayerActivity::class.java)
+//        intent.putExtra("url", "http://23.237.117.10/test.mkv")
+        intent.putExtra("url", url)
+        startActivity(intent)
     }
 
     override fun onScheduleSelected(programGuideSchedule: ProgramGuideSchedule<SimpleProgram>?) {

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -9,10 +8,9 @@ import 'package:latest_movies/features/movies/models/player/subtitle_color.dart'
 
 import '../../../../../core/utilities/app_utility.dart';
 
-final playerControlsNotifierProvider =
-    ChangeNotifierProvider.family<PlayerControlsNotifier, VlcPlayerController>(
-        (ref, controller) {
-  return PlayerControlsNotifier(vlcPlayerController: controller);
+final playerControlsNotifierProvider = ChangeNotifierProvider.autoDispose
+    .family<PlayerControlsNotifier, VlcPlayerController>((ref, controller) {
+  return PlayerControlsNotifier(ref: ref, vlcPlayerController: controller);
 });
 
 enum ControlsOverlayVisibility {
@@ -21,7 +19,8 @@ enum ControlsOverlayVisibility {
 }
 
 class PlayerControlsNotifier extends ChangeNotifier {
-  PlayerControlsNotifier({Key? key, required this.vlcPlayerController}) {
+  PlayerControlsNotifier(
+      {Key? key, required this.vlcPlayerController, required this.ref}) {
     init.call();
   }
 
@@ -86,6 +85,7 @@ class PlayerControlsNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
+    print("from player: dispose called");
     vlcPlayerController.removeListener(_updatesListener);
     _hideTimer?.cancel();
     _controlsVisibilityController.close();
@@ -94,6 +94,7 @@ class PlayerControlsNotifier extends ChangeNotifier {
 
   final VlcPlayerController vlcPlayerController;
   String duration = "00:00";
+  final Ref ref;
 
   // ---- Getters & Setters ----
 
@@ -196,30 +197,41 @@ class PlayerControlsNotifier extends ChangeNotifier {
   }
 
   Future<void> _updatesListener() async {
-    //not using setter for all as it would call notifyListeners() each time
-    _playingState = vlcPlayerController.value.playingState;
-    _playbackPosition = vlcPlayerController.value.position;
-    duration = formatDurationToString(vlcPlayerController.value.duration);
-    log("Playing State: ${describeEnum(_playingState)}");
+    // Check if the player is disposed
+    if (!vlcPlayerController.value.isInitialized) {
+      log("Player is not initialized");
+      return;
+    }
+
+    // Save the current state
+    final uPlayingState = vlcPlayerController.value.playingState;
+    final uPlaybackPosition = vlcPlayerController.value.position;
+    final uDuration =
+        formatDurationToString(vlcPlayerController.value.duration);
+    final uPlaybackSpeed = await vlcPlayerController.getPlaybackSpeed();
+    final uPlaybackSpeedIndex =
+        playbackSpeeds.indexWhere((element) => element == uPlaybackSpeed);
+
+    // Check if anything has changed
+    if (uPlayingState != playingState ||
+        uPlaybackSpeedIndex != playbackSpeedIndex) {
+      // Update the state
+      _playingState = uPlayingState;
+      playbackSpeedIndex = uPlaybackSpeedIndex;
+
+      // Call notifyListeners
+      notifyListeners();
+      print("(ControlsNotifier): calling update notifiers");
+    }
+
+    _playbackPosition = uPlaybackPosition;
+    duration = uDuration;
+
+    // Check if the video has ended
     if (playingState == PlayingState.ended) {
       log("Video has been ended / stopped. Cancelling timer");
       stopTimer();
     }
-
-    final playbackSpeed = await vlcPlayerController.getPlaybackSpeed();
-    playbackSpeedIndex =
-        playbackSpeeds.indexWhere((element) => element == playbackSpeed);
-
-    // } else if (_playingState == PlayingState.playing) {
-    //   log("Video is playing. Starting timer");
-    //   if (!_hideStuff) {
-    //     _startHideTimer();
-    //   }
-    // } else if (_playingState == PlayingState.paused) {
-    //   log("Video is paused. Cancelling timer");
-    //   stopTimer();
-    // }
-    notifyListeners();
   }
 
   ///Formats duration for the player

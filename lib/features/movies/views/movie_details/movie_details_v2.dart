@@ -268,7 +268,7 @@ class MovieDetailsViewV2 extends HookConsumerWidget {
                                             const platform = MethodChannel(
                                                 'com.example.latest_movies/channel');
                                             await platform.invokeMethod(
-                                                "navigateToPlayer");
+                                                "navigateToPlayer", );
                                             // AppRouter.navigateToPage(
                                             //     Routes.playerView,
                                             //     arguments:

@@ -38,6 +38,27 @@ subprojects {
         }
     }
 }
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            android.compileOptions {
+                sourceCompatibility JavaVersion.VERSION_11
+                targetCompatibility JavaVersion.VERSION_11
+            }
+            try {
+                // For Groovy DSL:
+                android.kotlinOptions {
+                    jvmTarget = "11"
+                }
+            } catch(Exception e) {
+                // kotlinOptions block might not exist or fail, handle gracefully
+                println "Warning: Could not set kotlinOptions.jvmTarget for project ${project.name}: ${e.message}"
+            }
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(':app')
 }

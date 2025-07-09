@@ -1,4 +1,3 @@
-// {
-//     "dart.flutterSdkPaths": ["/Users/iamsahilsonawane/fvm/versions/master"],
-//     "dart.flutterSdkPath": "/Users/iamsahilsonawane/fvm/versions/master"
-// }
+{
+  "dart.flutterSdkPath": ".fvm/versions/3.24.3"
+}

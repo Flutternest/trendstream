@@ -70,6 +70,27 @@ To get started with the project, follow these steps:
     flutter run
     ```
 
+## Pre-requisites
+This project uses [ffmpeg](https://arthenica.github.io/ffmpeg-kit/) which is no longer available - so we have kept a compiled binary of that [here](./android/decoder-libs/ffmpeg-kit-https-6.0-2.LTS.aar)
+
+Please install maven locally on your system and then the above binary in that. Below are the instructions for mac
+
+- Install maven using homebrew
+
+   ```
+   brew install maven
+   ```
+
+- Install the binary in maven local
+
+  ```
+    mvn install:install-file \
+  -Dfile=/Users/abhishekanandfn/Developer/projects/trendstream/android/decoder-libs/ffmpeg-kit-https-6.0-2.LTS.aar \
+  -DgroupId=com.arthenica \
+  -DartifactId=ffmpeg-kit-https \
+  -Dversion=6.0-2.LTS \
+  -Dpackaging=aar
+
 ## Usage
 To use the Latest Movies app, simply run the project on an Android TV device or emulator. The app will display the latest movies, allowing you to browse and watch trailers or full movies.
 

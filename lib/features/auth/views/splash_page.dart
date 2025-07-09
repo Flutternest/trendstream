@@ -26,7 +26,8 @@ class _SplashViewState extends ConsumerState<SplashView> {
   final remoteConfig = FirebaseRemoteConfig.instance;
 
   Future<void> initialize() async {
-    await Localizely.updateTranslations();
+    // OTA: Uncomment this when we have a ota support
+    // await Localizely.updateTranslations();
 
     await remoteConfig.ensureInitialized();
     await remoteConfig.setConfigSettings(RemoteConfigSettings(

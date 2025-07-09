@@ -2,6 +2,14 @@ apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-parcelize'
 
+rootProject.allprojects {
+    repositories {
+        mavenLocal() // must add this line
+        google()
+        mavenCentral()
+    }
+}
+
 android {
     compileSdkVersion 33
 

@@ -5,6 +5,7 @@ class Routes {
   static const String loginView = "/login";
   static const String signUpView = "/signup";
   static const String homeView = "/home";
+  static const String sports = "/sports";
   static const String detailsView = "/details";
   static const String detailsViewV2 = "/details-v2";
   static const String detailsViewV3 = "/details-v3";

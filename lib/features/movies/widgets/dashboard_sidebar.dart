@@ -10,7 +10,6 @@ import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/movies/controllers/side_bar_controller.dart';
 import 'package:latest_movies/features/movies/widgets/enter_passcode_dialog.dart';
 import 'package:latest_movies/features/movies/widgets/set_passcode_dialog.dart';
-import 'package:latest_movies/l10n/app_localisations.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../../core/router/router.dart';
@@ -147,7 +146,7 @@ class DashboardSideBar extends HookConsumerWidget {
                   },
                 ),
                 DrawerItem(
-                  title: "${context.localisations.tvGuide} \(L)",
+                  title: "${context.localisations.tvGuide} (L)",
                   iconData: Icons.live_tv_outlined,
                   selectedIconData: Icons.live_tv,
                   isSelected: sidebarState.sidebarOptions ==
@@ -238,9 +237,14 @@ class DashboardSideBar extends HookConsumerWidget {
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.sports,
                   onlyIcon: shouldHide,
-                  onTap: () {
+                  onTap: () async {
+                    final prevSelectedOption = sidebarState.sidebarOptions;
                     sidebarStateNotifier
                         .setSidebarOption(SidebarOptions.sports);
+                    await AppRouter.navigateToPage(Routes.sports);
+                    if (context.mounted) {
+                      sidebarStateNotifier.setSidebarOption(prevSelectedOption);
+                    }
                   },
                 ),
                 DrawerItem(

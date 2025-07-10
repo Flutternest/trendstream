@@ -8,6 +8,7 @@ import 'package:latest_movies/features/movies/views/tv_show_details/tv_show_deta
 import 'package:latest_movies/features/movies/views/tv_show_details/tv_show_details_v3.dart';
 import 'package:latest_movies/features/movies/views/tv_show_details/tv_show_seasons.dart';
 import 'package:latest_movies/features/movies/views/tv_show_details/tv_show_seasons_v3.dart';
+import 'package:latest_movies/features/sports/views/sports_view.dart';
 import 'package:latest_movies/features/tv_guide/views/player_view/player_view.dart';
 import 'package:latest_movies/features/tv_guide/views/tv_guide/tv_guide.dart';
 import '../../features/auth/views/splash_page.dart';

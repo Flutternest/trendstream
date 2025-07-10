@@ -63,6 +63,12 @@ class AppRouter {
           settings: settings,
           fullscreenDialog: false,
         );
+      case Routes.sports:
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => const SportsPage(),
+          settings: settings,
+          fullscreenDialog: false,
+        );
       case Routes.detailsView:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const MovieDetailsView(),

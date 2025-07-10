@@ -147,7 +147,7 @@ class HomeView extends HookConsumerWidget {
                     case SidebarOptions.liveChannelsSearch:
                       return const LiveChannelSearchPage();
                     case SidebarOptions.sports:
-                      return const SportsPage();
+                      return const SizedBox.shrink();
                     case SidebarOptions.apiMovies:
                       return const MoviesV2Grid();
                     case SidebarOptions.apiMoviesV3:

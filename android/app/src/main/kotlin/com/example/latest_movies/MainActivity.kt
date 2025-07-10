@@ -28,7 +28,7 @@ class MainActivity : FlutterActivity() {
                 result.success(null)
             } else  if (call.method == "navigateToPlayer") {
                 val intent = Intent(context, PlayerActivity::class.java)
-                intent.putExtra("url", "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")
+                intent.putExtra("url", "http://23.237.117.10/testmax1080.mkv")
                 startActivity(intent)
                 result.success(null)
             }  else  if (call.method == "navigateToYoutubePlayer") {

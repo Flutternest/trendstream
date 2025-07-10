@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -114,6 +115,7 @@ class _EnterPasscodeDialogState extends ConsumerState<EnterPasscodeDialog> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     maxLength: 4,
                     onValueChanged: (newVal) {
+                      log( "New passcode value: $newVal");
                       passcodeCtrl.text = newVal;
                       isPasscodeCorrect = false;
                       if (passcodeCtrl.text.length == 4) {

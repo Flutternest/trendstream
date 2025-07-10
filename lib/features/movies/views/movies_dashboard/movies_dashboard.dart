@@ -3,9 +3,9 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/constants/paths.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
+import 'package:latest_movies/core/models/category_model.dart';
 import 'package:latest_movies/core/shared_widgets/button.dart';
 import 'package:latest_movies/core/shared_widgets/default_app_padding.dart';
 import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
@@ -17,7 +17,6 @@ import 'package:latest_movies/features/movies/widgets/movies_grid.dart';
 import 'package:latest_movies/features/movies/widgets/tvshows_grid.dart';
 import 'package:latest_movies/features/movies/widgets/tvshows_grid_v3.dart';
 import 'package:latest_movies/features/settings/settings_page.dart';
-import 'package:latest_movies/features/sports/views/sports_view.dart';
 
 import '../../../../core/utilities/design_utility.dart';
 import '../../controllers/dashboard_sidebar_expanded_provider.dart';
@@ -67,6 +66,8 @@ class HomeView extends HookConsumerWidget {
             askForUpdate: true, isMounted: isMounted);
       }
     });
+
+
 
     return WillPopScope(
       onWillPop: () async {

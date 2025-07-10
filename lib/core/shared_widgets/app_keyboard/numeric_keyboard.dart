@@ -47,11 +47,7 @@ class NumericKeyboard extends StatefulWidget {
 }
 
 class _NumericKeyboardState extends State<NumericKeyboard> {
-  late final controller = TextEditingController()..addListener(textListener);
-
-  void textListener() {
-    widget.onValueChanged(controller.text);
-  }
+  late final controller = TextEditingController();
 
   @override
   void dispose() {
@@ -95,12 +91,14 @@ class _NumericKeyboardState extends State<NumericKeyboard> {
               if (widget.includeBackButton)
                 InkWell(
                   borderRadius: BorderRadius.circular(45),
-                  onTap: () {
+                  onTap:widget.includeBackButton
+                          ? () {
                     if (controller.text.isNotEmpty) {
                       controller.text = controller.text
                           .substring(0, controller.text.length - 1);
+                          widget.onValueChanged.call(controller.text);
                     }
-                  },
+                  } : null,
                   child: Container(
                       alignment: Alignment.center,
                       width: 50,
@@ -150,6 +148,7 @@ class _NumericKeyboardState extends State<NumericKeyboard> {
               ? controller.text.length < widget.maxLength!
               : true) {
             controller.text += value;
+            widget.onValueChanged.call(controller.text);
           }
         },
       ),

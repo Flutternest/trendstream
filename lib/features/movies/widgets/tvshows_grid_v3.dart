@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
-import 'package:latest_movies/features/movies/widgets/tv_show_item.dart';
 import 'package:latest_movies/features/movies/widgets/tv_show_item_v3.dart';
 
 import '../../../core/shared_widgets/app_loader.dart';
@@ -40,7 +39,7 @@ class TvShowsGridV3 extends HookConsumerWidget {
           },
         );
       },
-      error: (e, st) => ErrorView(error: e.toString()),
+      error: (e, st) => const ErrorView(),
       loading: () => const AppLoader(),
     );
   }

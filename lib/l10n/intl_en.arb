@@ -118,5 +118,9 @@
   "watchTrailer": "Watch Trailer",
   "@watchTrailer": {},
   "yesUpdate": "Yes, update",
-  "@yesUpdate": {}
+  "@yesUpdate": {},
+  "home": "Home",
+  "@home": {},
+  "retry": "Retry",
+  "@retry": {}
 }

@@ -47,7 +47,14 @@ class MoviesGrid extends HookConsumerWidget {
           },
         );
       },
-      error: (e) => ErrorView(error: e.error.toString()),
+      error: (e) => ErrorView(
+        onRetry: () {
+          Future.microtask(() {
+            ref.invalidate(popularMoviesCountProvider);
+            ref.invalidate(paginatedPopularMoviesProvider(0));
+          });
+        },
+      ),
       loading: (_) => const AppLoader(),
     );
   }

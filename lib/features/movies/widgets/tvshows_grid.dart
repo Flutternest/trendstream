@@ -45,7 +45,13 @@ class TvShowsGrid extends HookConsumerWidget {
           },
         );
       },
-      error: (e) => ErrorView(error: e.error.toString()),
+      error: (e) => ErrorView(
+        onRetry: () {
+          Future.microtask(() {
+            ref.invalidate(paginatedPopularTvShowsProvider(0));
+          });
+        },
+      ),
       loading: (_) => const AppLoader(),
     );
   }

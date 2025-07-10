@@ -6,9 +6,13 @@ import '../../../core/models/paginated_response.dart';
 import '../models/tv_show_details/tv_show_details.dart';
 
 final popularTvShowsCountProvider = Provider<AsyncValue<int>>((ref) {
-  return ref.watch(paginatedPopularTvShowsProvider(0)).whenData(
-        (PaginatedResponse<TvShow> pageData) => pageData.totalResults,
-      );
+  final asyncPage = ref.watch(paginatedPopularTvShowsProvider(0));
+
+  return asyncPage.when(
+    data: (pageData) => AsyncValue.data(pageData.totalResults),
+    error: (err, stack) => AsyncValue.error(err, stack),
+    loading: () => const AsyncValue.loading(),
+  );
 });
 
 final paginatedPopularTvShowsProvider =

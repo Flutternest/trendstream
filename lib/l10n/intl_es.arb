@@ -118,5 +118,9 @@
   "watchTrailer": "Ver el trailer",
   "@watchTrailer": {},
   "yesUpdate": "Si, actualizar",
-  "@yesUpdate": {}
+  "@yesUpdate": {},
+  "home": "Inicio",
+  "@home": {},
+  "retry": "Reintentar",
+  "@retry": {}
 }

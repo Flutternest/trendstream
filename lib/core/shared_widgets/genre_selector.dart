@@ -4,19 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:latest_movies/core/constants/colors.dart';
-import 'package:latest_movies/core/models/category_model.dart';
+import 'package:latest_movies/features/movies/models/movie/genre.dart';
 
-class CategorySidebar extends HookWidget {
-  const CategorySidebar({
+class GenreSelector extends HookWidget {
+  const GenreSelector({
     super.key,
-    this.selectedCategory,
-    required this.categories,
-    required this.onCategorySelected,
+    this.selectedGenre,
+    required this.genres,
+    required this.onGenreSelected,
   });
 
-  final CategoryModel? selectedCategory;
-  final List<CategoryModel> categories;
-  final Function(CategoryModel) onCategorySelected;
+  final Genre? selectedGenre;
+  final List<Genre> genres;
+  final Function(Genre) onGenreSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +26,8 @@ class CategorySidebar extends HookWidget {
     final bottomMostItemNode = useFocusNode();
     return Container(
       width: 150,
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
         border: Border(
           right: BorderSide(color: Theme.of(context).dividerColor, width: 1),
@@ -35,13 +37,6 @@ class CategorySidebar extends HookWidget {
         canRequestFocus: false,
         skipTraversal: true,
         onFocusChange: (isChildrenFocused) {
-          // if (isChildrenFocused) {
-          //   ref.read(dashboardSidebarStatusProvider.notifier).state =
-          //       DashboardSidebarStatus.expanded;
-          // } else {
-          //   ref.read(dashboardSidebarStatusProvider.notifier).state =
-          //       DashboardSidebarStatus.collapsed;
-          // }
           log("Focus changed: $isChildrenFocused");
           if (isChildrenFocused) {
             // If the sidebar is focused, request focus on the first item
@@ -69,28 +64,31 @@ class CategorySidebar extends HookWidget {
           return KeyEventResult.ignored;
         },
         child: ListView.builder(
-          itemCount: categories.length,
+          itemCount: genres.length,
           key: listViewKey,
+          shrinkWrap: true,
           itemBuilder: (context, index) {
-            final category = categories[index];
-            return Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: ListTile(
-                title: Text(category.name),
-                onTap: () {
-                  onCategorySelected(category);
-                },
-                focusNode: index == 0
-                    ? topMostItemNode
-                    : index == categories.length - 1
-                        ? bottomMostItemNode
-                        : null,
-                selectedTileColor: kPrimaryColor.withOpacity(.6),
-                focusColor: kPrimaryColor.withOpacity(.3),
-                selected: selectedCategory?.id == category.id,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
+            final genre = genres[index];
+            return ListTile(
+              horizontalTitleGap: 0,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 0.0),
+              visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
+              style: ListTileStyle.drawer,
+              title: Text(genre.name ?? ''),
+              onTap: () {
+                onGenreSelected(genre);
+              },
+              focusNode: index == 0
+                  ? topMostItemNode
+                  : index == genres.length - 1
+                      ? bottomMostItemNode
+                      : null,
+              selectedTileColor: kPrimaryColor.withOpacity(.6),
+              focusColor: kPrimaryColor.withOpacity(.3),
+              selected: selectedGenre?.id == genre.id,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
               ),
             );
           },

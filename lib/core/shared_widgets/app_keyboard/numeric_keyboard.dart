@@ -91,14 +91,15 @@ class _NumericKeyboardState extends State<NumericKeyboard> {
               if (widget.includeBackButton)
                 InkWell(
                   borderRadius: BorderRadius.circular(45),
-                  onTap:widget.includeBackButton
-                          ? () {
-                    if (controller.text.isNotEmpty) {
-                      controller.text = controller.text
-                          .substring(0, controller.text.length - 1);
-                          widget.onValueChanged.call(controller.text);
-                    }
-                  } : null,
+                  onTap: widget.includeBackButton
+                      ? () {
+                          if (controller.text.isNotEmpty) {
+                            controller.text = controller.text
+                                .substring(0, controller.text.length - 1);
+                            widget.onValueChanged.call(controller.text);
+                          }
+                        }
+                      : null,
                   child: Container(
                       alignment: Alignment.center,
                       width: 50,

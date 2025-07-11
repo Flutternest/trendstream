@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
 
 import '../../../core/services/shared_preferences_service.dart';
 import '../../../core/shared_widgets/app_keyboard/numeric_keyboard.dart';
@@ -16,7 +14,7 @@ class SetPasscodeDialog extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final passcodeCtrl = useTextEditingController();
-
+    final passcode = useState('');
     return Dialog(
       backgroundColor: kBackgroundColor,
       child: FocusScope(
@@ -31,36 +29,31 @@ class SetPasscodeDialog extends HookConsumerWidget {
               Text(context.localisations.setAdultContentPassDesc),
               verticalSpaceRegular,
               Center(
-                child: PinCodeTextField(
-                  appContext: context,
-                  length: 4,
-                  controller: passcodeCtrl,
-                  obscureText: false,
-                  autoFocus: false,
-                  beforeTextPaste: (text) => false,
-                  readOnly: true,
-                  animationType: AnimationType.fade,
-                  enabled: false,
-                  pinTheme: PinTheme(
-                    shape: PinCodeFieldShape.box,
-                    borderRadius: BorderRadius.circular(5),
-                    fieldHeight: 60,
-                    fieldWidth: 60,
-                    activeFillColor: kPrimaryColor,
-                    activeColor: Colors.transparent,
-                    inactiveFillColor: Colors.transparent,
-                    inactiveColor: kPrimaryColor,
-                    selectedFillColor: kPrimaryColor.withOpacity(.2),
-                    disabledColor: kPrimaryColor,
-                  ),
-                  cursorColor: Colors.white,
-                  backgroundColor: Colors.transparent,
-                  keyboardType: const TextInputType.numberWithOptions(),
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  animationDuration: const Duration(milliseconds: 300),
-                  enableActiveFill: true,
-                  onCompleted: (v) {},
-                  onChanged: (String value) {},
+                child: Row(
+                  children: List.generate(4, (index) {
+                    return Expanded(
+                      child: Container(
+                        height: 60,
+                        width: 60,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: kPrimaryColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          passcode.value.length > index
+                              ? passcode.value[index]
+                              : '',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
               ),
               Expanded(
@@ -71,6 +64,7 @@ class SetPasscodeDialog extends HookConsumerWidget {
                     maxLength: 4,
                     onValueChanged: (newVal) {
                       passcodeCtrl.text = newVal;
+                      passcode.value = newVal;
                     },
                     onDoneTap: () async {
                       if (passcodeCtrl.text.isEmpty) {
@@ -96,14 +90,6 @@ class SetPasscodeDialog extends HookConsumerWidget {
                   ),
                 ),
               ),
-              // AppButton(
-              //   text: "Set Passcode & Enter",
-              //   onTap: () async {
-
-              //   },
-              //   prefix: const Icon(Icons.password),
-              //   focusNode: btnFocusNode,
-              // ),
             ],
           ),
         ),

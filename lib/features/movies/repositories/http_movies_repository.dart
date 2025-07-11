@@ -1,8 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:latest_movies/core/config/config.dart';
-import 'package:latest_movies/core/services/http/http_service.dart';
-import 'package:latest_movies/features/movies/models/movie/movie.dart';
 import 'package:latest_movies/core/models/paginated_response.dart';
+import 'package:latest_movies/core/services/http/http_service.dart';
+import 'package:latest_movies/features/movies/models/movie/genre.dart';
+import 'package:latest_movies/features/movies/models/movie/movie.dart';
 import 'package:latest_movies/features/movies/models/movie_v2/movie_v2.dart';
 import 'package:latest_movies/features/movies/models/movie_v3/category.dart';
 import 'package:latest_movies/features/movies/models/movie_v3/version.dart';
@@ -29,13 +30,16 @@ class HttpMoviesRepository implements MoviesRepository {
 
   @override
   Future<PaginatedResponse<Movie>> getPopularMovies(
-      {int page = 1, bool forceRefresh = false}) async {
+      {int page = 1, bool forceRefresh = false, Genre? genre}) async {
     final responseData = await httpService.get(
-      '$path/popular',
+      '/discover/movie',
       forceRefresh: forceRefresh,
       queryParameters: {
         'page': page,
         'api_key': apiKey,
+        if (genre != null && genre.id != 0) ...{
+          'with_genres': genre.id,
+        },
       },
     );
 
@@ -194,5 +198,21 @@ class HttpMoviesRepository implements MoviesRepository {
     );
 
     return List<VersionV3>.from(responseData.map((x) => VersionV3.fromJson(x)));
+  }
+
+  @override
+  Future<List<Genre>> fetchGenres({bool forceRefresh = false}) async {
+    final responseData = await httpService.get(
+      'https://api.themoviedb.org/3/genre/movie/list',
+      forceRefresh: forceRefresh,
+      queryParameters: {
+        'api_key': apiKey,
+        'language': locale.languageCode,
+      },
+    );
+
+    return (responseData['genres'] as List)
+        .map((x) => Genre.fromJson(x))
+        .toList();
   }
 }

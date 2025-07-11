@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/services/http/http_service_provider.dart';
 import 'package:latest_movies/core/shared_providers/locale_provider.dart';
+import 'package:latest_movies/features/movies/models/movie/genre.dart';
 import 'package:latest_movies/features/movies/models/movie_v2/movie_v2.dart';
 import 'package:latest_movies/features/movies/models/movie_v3/category.dart';
 import 'package:latest_movies/features/movies/models/movie_v3/version.dart';
@@ -27,6 +28,7 @@ abstract class MoviesRepository {
   Future<PaginatedResponse<Movie>> getPopularMovies({
     int page = 1,
     bool forceRefresh = false,
+    Genre? genre,
   });
 
   Future<List<MovieV2>> fetchMoviesV2({bool forceRefresh = false});
@@ -60,4 +62,6 @@ abstract class MoviesRepository {
   Future<List<CategoryV3>> fetchCategories({bool forceRefresh = false});
   Future<MovieV3> fetchMovieDetailsV3(
       {bool forceRefresh = false, required int movieId});
+
+  Future<List<Genre>> fetchGenres({bool forceRefresh = false});
 }

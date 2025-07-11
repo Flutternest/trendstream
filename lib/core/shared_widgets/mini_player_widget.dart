@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 class MiniPlayerWidget extends StatelessWidget {
@@ -8,10 +11,17 @@ class MiniPlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AndroidView(
-      viewType: 'mini-player-view',
-      creationParams: {'videoUrl': videoUrl},
-      creationParamsCodec: const StandardMessageCodec(),
+    return Focus(
+      autofocus: true,
+      onFocusChange: (focused) {
+        log("MiniPlayer focus: $focused");
+      },
+      child: AndroidView(
+        viewType: 'mini-player-view',
+        creationParams: {'videoUrl': videoUrl},
+        creationParamsCodec: const StandardMessageCodec(),
+        hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+      ),
     );
   }
 }

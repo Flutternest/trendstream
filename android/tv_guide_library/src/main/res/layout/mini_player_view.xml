@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/playerRoot"
     android:layout_width="match_parent"
@@ -7,21 +6,27 @@
     android:focusable="true"
     android:focusableInTouchMode="true">
 
+    <!-- ExoPlayer view -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/exoPlayerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:focusable="false"
+        android:focusableInTouchMode="false"
+        android:clickable="false"
         android:background="#000000" />
 
+    <!-- Play/Pause Button in Bottom-End Corner -->
     <ImageButton
         android:id="@+id/playPauseButton"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:layout_gravity="center"
-        android:background="@android:color/transparent"
-        android:contentDescription="Play/pause"
-        android:src="@android:drawable/ic_media_pause"
-        android:focusable="false"
-        android:visibility="gone" />
+        android:layout_gravity="bottom|end"
+        android:layout_margin="0dp"
+        android:background="?android:selectableItemBackground"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:contentDescription="Play/Pause"
+        android:importantForAccessibility="yes"
+        android:src="@android:drawable/ic_media_play" />
 </FrameLayout>

@@ -4,12 +4,12 @@ import 'package:flutter_vlc_player/flutter_vlc_player.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
+import 'package:latest_movies/core/shared_widgets/mini_player_widget.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/movies/controllers/live_channel_controller.dart';
 import 'package:latest_movies/features/movies/views/movies_dashboard/search/live_channels_search_grid.dart';
 
 import '../../../../../core/shared_widgets/app_keyboard/app_keyboard.dart';
-import '../../../../tv_guide/views/tv_guide/tv_guide.dart';
 
 class LiveChannelSearchPage extends HookConsumerWidget {
   const LiveChannelSearchPage({super.key});
@@ -91,12 +91,11 @@ class LiveChannelSearchPage extends HookConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AspectRatio(
+                const AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: PreviewPlayer(
-                    onControllerInitialized: (controller) {
-                      previewController.value = controller;
-                    },
+                  child: MiniPlayerWidget(
+                    videoUrl:
+                        'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
                   ),
                 ),
                 verticalSpaceSmall,

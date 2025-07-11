@@ -1,20 +1,25 @@
 package com.example.latest_movies
 
 import android.content.Intent
-import io.flutter.embedding.android.FlutterActivity
 import android.os.Build.VERSION
 import android.os.Build.VERSION_CODES
 import android.util.Log
 import com.egeniq.androidtvprogramguide.player.PlayerActivity
 import com.egeniq.androidtvprogramguide.youtube_player.YoutubePlayerActivity
+import com.example.latest_movies.mini_player.MiniPlayerViewFactory
+import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+
 
 class MainActivity : FlutterActivity() {
     private val channel = "com.example.latest_movies/channel"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        flutterEngine.platformViewsController
+            .registry
+            .registerViewFactory("mini-player-view", MiniPlayerViewFactory())
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             channel

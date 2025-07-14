@@ -44,22 +44,22 @@ public class MiniPlayerView extends FrameLayout {
         LayoutInflater.from(context).inflate(R.layout.mini_player_view, this, true);
 
         exoPlayerView = findViewById(R.id.exoPlayerView);
-        playPauseButton = findViewById(R.id.playPauseButton);
+//        playPauseButton = findViewById(R.id.playPauseButton);
 
-        setFocusable(true);
-        setFocusableInTouchMode(true);
+//        setFocusable(true);
+//        setFocusableInTouchMode(true);
 
         exoPlayer = new ExoPlayer.Builder(context).build();
         exoPlayerView.setPlayer(exoPlayer);
         exoPlayerView.setUseController(false);
 
-        playPauseButton.setOnClickListener(v -> togglePlayPause());
-        playPauseButton.setFocusable(true);
-        playPauseButton.setFocusableInTouchMode(true);
+//        playPauseButton.setOnClickListener(v -> togglePlayPause());
+//        playPauseButton.setFocusable(true);
+//        playPauseButton.setFocusableInTouchMode(true);
         updateButtonIcon();
     }
 
-    private void togglePlayPause() {
+    public void togglePlayPause() {
         if (exoPlayer.isPlaying()) {
             exoPlayer.pause();
         } else {

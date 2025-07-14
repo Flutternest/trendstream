@@ -395,76 +395,76 @@ class CurrentProgramInfo extends StatelessWidget {
   }
 }
 
-class PreviewPlayer extends StatefulWidget {
-  const PreviewPlayer({super.key, this.onControllerInitialized});
+// class PreviewPlayer extends StatefulWidget {
+//   const PreviewPlayer({super.key, this.onControllerInitialized});
 
-  final Function(VlcPlayerController controller)? onControllerInitialized;
+//   final Function(VlcPlayerController controller)? onControllerInitialized;
 
-  @override
-  State<PreviewPlayer> createState() => _PreviewPlayerState();
-}
+//   @override
+//   State<PreviewPlayer> createState() => _PreviewPlayerState();
+// }
 
-class _PreviewPlayerState extends State<PreviewPlayer> {
-  late VlcPlayerController _videoPlayerController;
+// class _PreviewPlayerState extends State<PreviewPlayer> {
+//   late VlcPlayerController _videoPlayerController;
 
-  void initListener() {
-    if (_videoPlayerController.value.isInitialized) {
-      _videoPlayerController.setVolume(0);
-    }
-  }
+//   void initListener() {
+//     if (_videoPlayerController.value.isInitialized) {
+//       _videoPlayerController.setVolume(0);
+//     }
+//   }
 
-  @override
-  void initState() {
-    super.initState();
-    _videoPlayerController = VlcPlayerController.network(
-      'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-      // 'https://media.w3.org/2010/05/sintel/trailer.mp4',
-      hwAcc: HwAcc.full,
-      autoPlay: true,
-      options: VlcPlayerOptions(
-        advanced: VlcAdvancedOptions([
-          VlcAdvancedOptions.networkCaching(2000),
-        ]),
-        subtitle: VlcSubtitleOptions([
-          VlcSubtitleOptions.boldStyle(true),
-          VlcSubtitleOptions.fontSize(30),
-          VlcSubtitleOptions.color(VlcSubtitleColor.white),
-        ]),
-        http: VlcHttpOptions([
-          VlcHttpOptions.httpReconnect(true),
-        ]),
-        rtp: VlcRtpOptions([
-          VlcRtpOptions.rtpOverRtsp(true),
-        ]),
-      ),
-    );
-    widget.onControllerInitialized?.call(_videoPlayerController);
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _videoPlayerController.addOnInitListener(initListener);
-    });
-  }
+//   @override
+//   void initState() {
+//     super.initState();
+//     _videoPlayerController = VlcPlayerController.network(
+//       'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+//       // 'https://media.w3.org/2010/05/sintel/trailer.mp4',
+//       hwAcc: HwAcc.full,
+//       autoPlay: true,
+//       options: VlcPlayerOptions(
+//         advanced: VlcAdvancedOptions([
+//           VlcAdvancedOptions.networkCaching(2000),
+//         ]),
+//         subtitle: VlcSubtitleOptions([
+//           VlcSubtitleOptions.boldStyle(true),
+//           VlcSubtitleOptions.fontSize(30),
+//           VlcSubtitleOptions.color(VlcSubtitleColor.white),
+//         ]),
+//         http: VlcHttpOptions([
+//           VlcHttpOptions.httpReconnect(true),
+//         ]),
+//         rtp: VlcRtpOptions([
+//           VlcRtpOptions.rtpOverRtsp(true),
+//         ]),
+//       ),
+//     );
+//     widget.onControllerInitialized?.call(_videoPlayerController);
+//     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+//       _videoPlayerController.addOnInitListener(initListener);
+//     });
+//   }
 
-  @override
-  void dispose() async {
-    super.dispose();
-    await _videoPlayerController.dispose();
-  }
+//   @override
+//   void dispose() async {
+//     super.dispose();
+//     await _videoPlayerController.dispose();
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.black,
-        border: Border.all(color: kPrimaryColor, width: 3),
-      ),
-      child: VlcPlayer(
-        controller: _videoPlayerController,
-        aspectRatio: 16 / 9,
-        placeholder: const Center(child: CircularProgressIndicator()),
-      ),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       decoration: BoxDecoration(
+//         color: Colors.black,
+//         border: Border.all(color: kPrimaryColor, width: 3),
+//       ),
+//       child: VlcPlayer(
+//         controller: _videoPlayerController,
+//         aspectRatio: 16 / 9,
+//         placeholder: const Center(child: CircularProgressIndicator()),
+//       ),
+//     );
+//   }
+// }
 
 class _ChannelPrograms extends StatefulWidget {
   const _ChannelPrograms(

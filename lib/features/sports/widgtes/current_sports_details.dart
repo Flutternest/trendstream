@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latest_movies/core/constants/colors.dart';
+import 'package:latest_movies/core/shared_widgets/mini_player_widget.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/sports/controllers/current_focused_program_controller.dart';
-import 'package:latest_movies/features/sports/views/sports_view.dart';
 
 class CurrentSportsDetails extends ConsumerWidget {
   const CurrentSportsDetails({super.key});
@@ -51,18 +51,14 @@ class CurrentSportsDetails extends ConsumerWidget {
           ),
         ),
         const Spacer(),
-        SizedBox(
+        const SizedBox(
           height: 100,
-          // child: AspectRatio(
-          //   aspectRatio: 16 / 9,
-          //   child: SizedBox.expand(
-          //     child: ColoredBox(color: Colors.black),
-          //   ),
-          // ),
-          child: LivePreviewPlayer(
-            onControllerInitialized: (controller) {
-              // previewController = controller;
-            },
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: MiniPlayerWidget(
+              videoUrl:
+                  'http://sample.vodobox.com/big_buck_bunny_4k/big_buck_bunny_4k.m3u8',
+            ),
           ),
         ),
       ],

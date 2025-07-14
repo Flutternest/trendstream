@@ -17,9 +17,13 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        flutterEngine.platformViewsController
+        flutterEngine
+            .platformViewsController
             .registry
-            .registerViewFactory("mini-player-view", MiniPlayerViewFactory())
+            .registerViewFactory(
+                "mini-player-view",
+                MiniPlayerViewFactory(flutterEngine.dartExecutor.binaryMessenger)
+            );
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             channel

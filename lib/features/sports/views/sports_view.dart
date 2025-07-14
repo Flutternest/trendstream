@@ -31,82 +31,85 @@ class _SportsPageState extends ConsumerState<SportsPage> {
     final eventAsync = ref.watch(sportsEventsProvider);
 
     return Scaffold(
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8.0),
-            width: double.infinity,
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () {
-                Debouncer(delay: const Duration(milliseconds: 500))
-                    .call(() => AppRouter.pop());
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.white),
-              icon: const Icon(Icons.arrow_back),
-              label: Text(context.localisations.back),
-            ),
-          ),
-          verticalSpaceRegular,
-          const CurrentSportsDetails(),
-          verticalSpaceMedium,
-          const SizedBox(
-            height: 30,
-            child: Row(
-              children: [
-                Clock(),
-                horizontalSpaceMedium,
-                Expanded(
-                  child: CategorySelector(),
-                ),
-              ],
-            ),
-          ),
-          verticalSpaceRegular,
-          Expanded(
-            child: eventAsync.when(
-              data: (events) {
-                return ListView.separated(
-                  itemCount: events.length,
-                  itemBuilder: (context, index) {
-                    final event = events[index];
-                    return SportsProgramListTile(
-                      title:
-                          "${DateFormat("HH:mm a").format(event.eventDate!)} - ${event.name ?? "N/A"}",
-                      icon: Icons.sports_football,
-                      autofocus: index == 0,
-                      onFocused: () {
-                        ref
-                            .read(currentFocusedEventController.notifier)
-                            .update((state) => event);
-                      },
-                      onTap: () async {
-                        if (previewController.value.isBuffering ||
-                            previewController.value.isPlaying) {
-                          previewController.pause();
-                        }
-                        await AppRouter.navigateToPage(Routes.playerView,
-                            arguments:
-                                "http://x.lamtv.tv:8080/live/test/test/130.m3u8");
-                        if (mounted) {
-                          previewController
-                            ..seekTo(const Duration(days: 3))
-                            ..play();
-                        }
-                      },
-                    );
-                  },
-                  separatorBuilder: (contetxt, _) => const Divider(height: 0),
-                );
-              },
-              error: (err, st) => ErrorView(error: err.toString()),
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8.0),
+              width: double.infinity,
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () {
+                  Debouncer(delay: const Duration(milliseconds: 500))
+                      .call(() => AppRouter.pop());
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.white),
+                icon: const Icon(Icons.arrow_back),
+                label: Text(context.localisations.back),
               ),
             ),
-          ),
-        ],
+            verticalSpaceRegular,
+            const CurrentSportsDetails(),
+            verticalSpaceMedium,
+            const SizedBox(
+              height: 30,
+              child: Row(
+                children: [
+                  Clock(),
+                  horizontalSpaceMedium,
+                  Expanded(
+                    child: CategorySelector(),
+                  ),
+                ],
+              ),
+            ),
+            verticalSpaceRegular,
+            Expanded(
+              child: eventAsync.when(
+                data: (events) {
+                  return ListView.separated(
+                    itemCount: events.length,
+                    itemBuilder: (context, index) {
+                      final event = events[index];
+                      return SportsProgramListTile(
+                        title:
+                            "${DateFormat("HH:mm a").format(event.eventDate!)} - ${event.name ?? "N/A"}",
+                        icon: Icons.sports_football,
+                        autofocus: index == 0,
+                        onFocused: () {
+                          ref
+                              .read(currentFocusedEventController.notifier)
+                              .update((state) => event);
+                        },
+                        onTap: () async {
+                          if (previewController.value.isBuffering ||
+                              previewController.value.isPlaying) {
+                            previewController.pause();
+                          }
+                          await AppRouter.navigateToPage(Routes.playerView,
+                              arguments:
+                                  "http://x.lamtv.tv:8080/live/test/test/130.m3u8");
+                          if (mounted) {
+                            previewController
+                              ..seekTo(const Duration(days: 3))
+                              ..play();
+                          }
+                        },
+                      );
+                    },
+                    separatorBuilder: (contetxt, _) => const Divider(height: 0),
+                  );
+                },
+                error: (err, st) => ErrorView(error: err.toString()),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

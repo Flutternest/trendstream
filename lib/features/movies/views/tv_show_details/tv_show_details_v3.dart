@@ -1,11 +1,8 @@
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:ensure_visible_when_focused/ensure_visible_when_focused.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
@@ -14,12 +11,12 @@ import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/image.dart';
-import 'package:latest_movies/core/utilities/app_utility.dart';
+import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
+import 'package:latest_movies/features/movies/controllers/native_player_controller.dart';
 import 'package:latest_movies/features/movies/models/season_details_args/season_details_args.dart';
 import 'package:latest_movies/features/movies/models/tv_show_details/season.dart';
-import 'package:latest_movies/features/movies/models/tv_show_details/tv_show_details.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../core/config/config.dart';
 import '../../../../core/shared_widgets/button.dart';
 import '../../../../core/shared_widgets/default_app_padding.dart';
@@ -338,7 +335,8 @@ class TvShowDetailsViewV3 extends HookConsumerWidget {
                                     Row(
                                       children: [
                                         Expanded(
-                                            child: _buildWatchButtons(context)),
+                                            child: _buildWatchButtons(
+                                                context, ref)),
                                         AppButton(
                                           autofocus: true,
                                           text:
@@ -686,15 +684,17 @@ class TvShowDetailsViewV3 extends HookConsumerWidget {
     );
   }
 
-  Row _buildWatchButtons(BuildContext context) {
+  Row _buildWatchButtons(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
         AppButton(
           autofocus: true,
           text: context.localisations.watchNow,
           onTap: () async {
-            const platform = MethodChannel('com.example.latest_movies/channel');
-            await platform.invokeMethod("navigateToPlayer");
+            ref
+                .read(nativePlayerCtrlProvider(NativePlayerControllerArgs(
+                    loadingOverlay: LoadingOverlay.of(context), videoUrl: '')))
+                .navigateToPlayer();
             // AppRouter.navigateToPage(Routes.playerView);
           },
           prefix: const Icon(

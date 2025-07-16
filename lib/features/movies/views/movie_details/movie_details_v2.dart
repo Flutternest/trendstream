@@ -10,7 +10,10 @@ import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/image.dart';
+import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
+import 'package:latest_movies/features/movies/controllers/native_player_controller.dart';
+
 import '../../../../core/config/config.dart';
 import '../../../../core/shared_widgets/button.dart';
 import '../../../../core/utilities/debouncer.dart';
@@ -265,10 +268,14 @@ class MovieDetailsViewV2 extends HookConsumerWidget {
                                           autofocus: true,
                                           text: context.localisations.watchNow,
                                           onTap: () async {
-                                            const platform = MethodChannel(
-                                                'com.example.latest_movies/channel');
-                                            await platform.invokeMethod(
-                                                "navigateToPlayer", );
+                                            ref
+                                                .read(nativePlayerCtrlProvider(
+                                                    NativePlayerControllerArgs(
+                                                        loadingOverlay:
+                                                            LoadingOverlay.of(
+                                                                context),
+                                                        videoUrl: '')))
+                                                .navigateToPlayer();
                                             // AppRouter.navigateToPage(
                                             //     Routes.playerView,
                                             //     arguments:

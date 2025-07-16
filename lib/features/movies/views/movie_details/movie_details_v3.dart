@@ -12,7 +12,9 @@ import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/image.dart';
+import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
+import 'package:latest_movies/features/movies/controllers/native_player_controller.dart';
 import 'package:latest_movies/features/movies/views/movie_details/all_cast_crew_v3_view.dart';
 import 'package:latest_movies/features/movies/views/movie_details/movie_details.dart';
 import '../../../../core/config/config.dart';
@@ -269,10 +271,14 @@ class MovieDetailsViewV3 extends HookConsumerWidget {
                                           autofocus: true,
                                           text: context.localisations.watchNow,
                                           onTap: () async {
-                                            const platform = MethodChannel(
-                                                'com.example.latest_movies/channel');
-                                            await platform.invokeMethod(
-                                                "navigateToPlayer");
+                                            ref
+                                                .read(nativePlayerCtrlProvider(
+                                                    NativePlayerControllerArgs(
+                                                        loadingOverlay:
+                                                            LoadingOverlay.of(
+                                                                context),
+                                                        videoUrl: '')))
+                                                .navigateToPlayer();
                                             // AppRouter.navigateToPage(
                                             //     Routes.playerView,
                                             //     arguments:

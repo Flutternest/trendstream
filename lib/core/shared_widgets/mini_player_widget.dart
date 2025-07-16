@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
+import 'package:latest_movies/features/movies/controllers/native_player_controller.dart';
 
-class MiniPlayerWidget extends HookWidget {
+class MiniPlayerWidget extends HookConsumerWidget {
   final String videoUrl;
 
   const MiniPlayerWidget({super.key, required this.videoUrl});
@@ -15,13 +18,13 @@ class MiniPlayerWidget extends HookWidget {
   static const methodChannel = 'mini_player_view_channel';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     useEffect(() {
       const MethodChannel(methodChannel).setMethodCallHandler((call) async {
         if (call.method == "onRootTapped") {
           log("Native root tapped!");
-          const platform = MethodChannel('com.example.latest_movies/channel');
-          await platform.invokeMethod("navigateToPlayer");
+          ref.read(nativePlayerCtrlProvider(NativePlayerControllerArgs(
+              loadingOverlay: LoadingOverlay.of(context), videoUrl: videoUrl))).navigateToPlayer();
         }
       });
       return null;

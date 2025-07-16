@@ -16,10 +16,16 @@ public class MiniPlayerPlatformView implements PlatformView {
     private final MiniPlayerView miniPlayerView;
     private final MethodChannel methodChannel;
 
-    MiniPlayerPlatformView(Context context, BinaryMessenger messenger,  int id, Map<String, Object> args) {
+    MiniPlayerPlatformView(Context context, BinaryMessenger messenger, int id, Map<String, Object> args) {
         miniPlayerView = new MiniPlayerView(context);
+        miniPlayerView.setFocusable(true);
+        miniPlayerView.setFocusableInTouchMode(true);
 
-        methodChannel = new MethodChannel(messenger, "mini_player_channel_" + id);
+        methodChannel = new MethodChannel(messenger, "mini_player_view_channel");
+
+        miniPlayerView.setCallback(() -> {
+            methodChannel.invokeMethod("onRootTapped", null);
+        });
 
         methodChannel.setMethodCallHandler((call, result) -> {
             switch (call.method) {
@@ -27,12 +33,19 @@ public class MiniPlayerPlatformView implements PlatformView {
                     miniPlayerView.togglePlayPause();
                     result.success(null);
                     break;
+
+                case "requestNativeFocus":
+                    miniPlayerView.requestFocusToPlayerRoot();
+                    result.success(true);
+                    break;
+
                 default:
                     result.notImplemented();
+                    break;
             }
         });
 
-        // Optional: set initial video if passed
+        // Set initial video URL if passed
         if (args.containsKey("videoUrl")) {
             String url = (String) args.get("videoUrl");
             miniPlayerView.setVideoUrl(url);

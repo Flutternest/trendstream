@@ -13,6 +13,7 @@ import 'package:latest_movies/features/movies/controllers/current_multi_program_
 import 'package:latest_movies/features/movies/controllers/search_multi_programs_count_provider.dart';
 import 'package:latest_movies/features/movies/controllers/search_paginated_multi_programs.dart';
 import 'package:latest_movies/features/movies/widgets/multi_program_item.dart';
+
 import '../../../core/shared_widgets/app_loader.dart';
 import '../../../core/shared_widgets/error_view.dart';
 import '../controllers/movie_search_controller.dart';
@@ -63,8 +64,9 @@ class MultiProgramsSearchGrid extends HookConsumerWidget {
           if (e.error is DioError) {
             final DioError dioError = e.error as DioError;
 
-            if (dioError.response?.data['errors']
-                .contains('query must be provided')) {
+            if (dioError.response != null &&
+                dioError.response?.data['errors']
+                    .contains('query must be provided')) {
               return SearchErrorWidget(
                   message: context.localisations.trySearchingForMovieOrTvShow);
             }

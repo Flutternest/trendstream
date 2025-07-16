@@ -4,29 +4,86 @@
     android:layout_height="match_parent"
     android:background="#000000"
     android:focusable="true"
-    android:focusableInTouchMode="true">
+    android:focusableInTouchMode="true"
+    android:descendantFocusability="afterDescendants"
+    android:nextFocusRight="@+id/playPauseButton"
+    android:nextFocusDown="@+id/playPauseButton" >
 
-    <!-- ExoPlayer view -->
+    <!-- ExoPlayer View -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/exoPlayerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="#000000"
         android:focusable="false"
         android:focusableInTouchMode="false"
-        android:clickable="false"
-        android:background="#000000" />
+        android:clickable="false" />
 
-    <!-- Play/Pause Button in Bottom-End Corner -->
-    <ImageButton
-        android:id="@+id/playPauseButton"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="0dp"
-        android:background="?android:selectableItemBackground"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
-        android:contentDescription="Play/Pause"
-        android:importantForAccessibility="yes"
-        android:src="@android:drawable/ic_media_play" />
+    <!-- Loader -->
+    <ProgressBar
+        android:id="@+id/loadingSpinner"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:visibility="visible"
+        style="?android:attr/progressBarStyleLarge" />
+
+    <!-- Control Bar Container with Gradient Background -->
+    <FrameLayout
+        android:id="@+id/bottomControlBar"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bottom_tint_gradient">
+
+        <!-- Button Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:layout_gravity="bottom"
+            android:layout_marginBottom="0dp"
+            android:baselineAligned="false">
+
+            <!-- Play/Pause Button (Left) -->
+            <ImageButton
+                android:id="@+id/playPauseButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:background="?android:selectableItemBackground"
+                android:src="@android:drawable/ic_media_play"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:contentDescription="Play/Pause"
+                android:nextFocusRight="@+id/muteButton"
+                android:nextFocusDown="@+id/muteButton"
+                android:nextFocusLeft="@+id/playerRoot"
+                android:nextFocusUp="@+id/playerRoot" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- Mute/Unmute Button (Right) -->
+            <ImageButton
+                android:id="@+id/muteButton"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
+                android:background="?android:selectableItemBackground"
+                android:src="@android:drawable/ic_lock_silent_mode"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:contentDescription="Mute/Unmute"
+                android:nextFocusLeft="@+id/playPauseButton"
+                android:nextFocusUp="@+id/playPauseButton" />
+        </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

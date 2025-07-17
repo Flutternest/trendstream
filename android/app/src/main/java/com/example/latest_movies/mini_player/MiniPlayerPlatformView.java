@@ -18,31 +18,12 @@ public class MiniPlayerPlatformView implements PlatformView {
 
     MiniPlayerPlatformView(Context context, BinaryMessenger messenger, int id, Map<String, Object> args) {
         miniPlayerView = new MiniPlayerView(context);
-        miniPlayerView.setFocusable(true);
-        miniPlayerView.setFocusableInTouchMode(true);
 
         methodChannel = new MethodChannel(messenger, "mini_player_view_channel");
 
-        miniPlayerView.setCallback(() -> {
-            methodChannel.invokeMethod("onRootTapped", null);
-        });
 
         methodChannel.setMethodCallHandler((call, result) -> {
-            switch (call.method) {
-                case "togglePlayPause":
-                    miniPlayerView.togglePlayPause();
-                    result.success(null);
-                    break;
-
-                case "requestNativeFocus":
-                    miniPlayerView.requestFocusToPlayerRoot();
-                    result.success(true);
-                    break;
-
-                default:
-                    result.notImplemented();
-                    break;
-            }
+            result.notImplemented();
         });
 
         // Set initial video URL if passed

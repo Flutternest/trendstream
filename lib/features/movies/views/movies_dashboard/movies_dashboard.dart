@@ -13,6 +13,7 @@ import 'package:latest_movies/core/utilities/app_utility.dart';
 import 'package:latest_movies/features/movies/enums/sidebar_options.dart';
 import 'package:latest_movies/features/movies/views/movies_dashboard/search/live_channel_search_page.dart';
 import 'package:latest_movies/features/movies/views/movies_dashboard/search/search_page.dart';
+import 'package:latest_movies/features/movies/widgets/movie_horizontal_list.dart';
 import 'package:latest_movies/features/movies/widgets/movies_grid.dart';
 import 'package:latest_movies/features/movies/widgets/tvshows_grid.dart';
 import 'package:latest_movies/features/movies/widgets/tvshows_grid_v3.dart';
@@ -66,8 +67,6 @@ class HomeView extends HookConsumerWidget {
             askForUpdate: true, isMounted: isMounted);
       }
     });
-
-
 
     return WillPopScope(
       onWillPop: () async {
@@ -155,6 +154,8 @@ class HomeView extends HookConsumerWidget {
                       return const MoviesV3Grid();
                     case SidebarOptions.settings:
                       return const SettingsPage();
+                    case SidebarOptions.movieV2:
+                      return const MovieHorizontalList();
                     default:
                       return const MoviesGrid();
                   }

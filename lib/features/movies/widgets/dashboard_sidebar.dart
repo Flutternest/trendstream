@@ -106,6 +106,19 @@ class DashboardSideBar extends HookConsumerWidget {
                   },
                 ),
                 DrawerItem(
+                  title: context.localisations.movies,
+                  // title: AppLocalizations.of(context)!.helloWorld,
+                  iconData: Icons.movie_outlined,
+                  selectedIconData: Icons.movie,
+                  isSelected:
+                      sidebarState.sidebarOptions == SidebarOptions.movieV2,
+                  onlyIcon: shouldHide,
+                  onTap: () {
+                    sidebarStateNotifier
+                        .setSidebarOption(SidebarOptions.movieV2);
+                  },
+                ),
+                DrawerItem(
                   title: context.localisations.tvShows,
                   iconData: Icons.tv_outlined,
                   selectedIconData: Icons.tv,

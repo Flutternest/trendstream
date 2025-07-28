@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:latest_movies/core/models/category_model.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/genre_selector.dart';
@@ -19,6 +18,7 @@ class AdultGrid extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final asyncGenres = ref.watch(genreListProvider);
     final selectedGenre = ref.watch(selectedAdultGenreProvider);
+    final isGenreSelectorCollapsed = useState(false);
     return asyncGenres.when(
       data: (genres) {
         return Row(
@@ -32,6 +32,7 @@ class AdultGrid extends HookConsumerWidget {
                   ref.invalidate(currentAdultShowProvider);
                 });
               },
+              isCollapsed: isGenreSelectorCollapsed,
             ),
             Expanded(
               child: AlignedGridView.count(

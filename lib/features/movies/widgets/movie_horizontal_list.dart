@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/features/movies/controllers/current_popular_movies_provider.dart';
 import 'package:latest_movies/features/movies/controllers/popular_movies_count_provider.dart';
+import 'package:latest_movies/features/movies/models/movie/genre.dart';
 import 'package:latest_movies/features/movies/models/movie/movie.dart';
 import 'package:latest_movies/features/movies/widgets/movie_item.dart';
 
@@ -22,49 +24,7 @@ class MovieHorizontalList extends HookConsumerWidget {
             final genre = genresWithMovies.keys.elementAt(index);
             final movies = genresWithMovies[genre]!;
 
-            return SizedBox(
-              height: 475,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Genre title
-                  Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Text(
-                      genre.name ?? 'Unknown Genre',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-
-                  // Horizontal movie list
-                  Expanded(
-                    // Fixed height for movie tiles
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 0.0),
-                      itemCount: movies.length,
-                      itemBuilder: (context, movieIndex) {
-                        final AsyncValue<Movie> currentPopularMovieFromIndex =
-                            AsyncValue.data(movies[movieIndex]);
-
-                        return SizedBox(
-                          width: 185,
-                          child: ProviderScope(
-                            overrides: [
-                              currentPopularMovieProvider.overrideWithValue(
-                                  currentPopularMovieFromIndex)
-                            ],
-                            child: MovieTile(autofocus: index == 0),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 24.0), // Spacing between genres
-                ],
-              ),
-            );
+            return _MovieHorizontalListWidget(genre: genre, movies: movies);
           },
         );
       },
@@ -74,6 +34,71 @@ class MovieHorizontalList extends HookConsumerWidget {
         },
       ),
       loading: () => const AppLoader(),
+    );
+  }
+}
+
+class _MovieHorizontalListWidget extends HookWidget {
+  const _MovieHorizontalListWidget({
+    super.key,
+    required this.genre,
+    required this.movies,
+  });
+
+  final Genre genre;
+  final List<Movie> movies;
+
+  @override
+  Widget build(BuildContext context) {
+    final focusNodes = useMemoized(
+      () => List.generate(movies.length, (index) => FocusNode()),
+    );
+    return SizedBox(
+      height: 475,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Genre title
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Text(
+              genre.name ?? 'Unknown Genre',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+
+          // Horizontal movie list
+          Expanded(
+            // Fixed height for movie tiles
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 0.0),
+              itemCount: movies.length,
+              itemBuilder: (context, movieIndex) {
+                final AsyncValue<Movie> currentPopularMovieFromIndex =
+                    AsyncValue.data(movies[movieIndex]);
+
+                return SizedBox(
+                  width: 185,
+                  child: ProviderScope(
+                    overrides: [
+                      currentPopularMovieProvider
+                          .overrideWithValue(currentPopularMovieFromIndex)
+                    ],
+                    child: MovieTile(
+                      autofocus: false,
+                      index: movieIndex,
+                      focusNode: focusNodes[movieIndex],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 24.0), // Spacing between genres
+        ],
+      ),
     );
   }
 }

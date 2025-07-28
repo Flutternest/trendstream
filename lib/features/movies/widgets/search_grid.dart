@@ -29,34 +29,8 @@ class MovieSearchGrid extends HookConsumerWidget {
       bucket: pageBucket,
       child: searchedMoviesCount.map(
         data: (asyncData) {
-          return AlignedGridView.count(
-            key: const PageStorageKey<String>(
-                'preserve_search_grid_scroll_and_focus'),
-            controller: ScrollController(),
-            itemCount: asyncData.value,
-            crossAxisCount: ResponsiveWidget.isMediumScreen(context)
-                ? 3
-                : ResponsiveWidget.isSmallScreen(context)
-                    ? 2
-                    : 6,
-            mainAxisSpacing: 10.0,
-            crossAxisSpacing: 10.0,
-            itemBuilder: (BuildContext context, int index) {
-              final AsyncValue<Movie> currentPopularPersonFromIndex = ref
-                  .watch(paginatedSearchMoviesProvider(
-                      PaginatedSearchProviderArgs(
-                          page: index ~/ 20,
-                          query: ref.watch(searchKeywordProvider))))
-                  .whenData((pageData) => pageData.results[index % 20]);
-
-              return ProviderScope(
-                overrides: [
-                  currentPopularMovieProvider
-                      .overrideWithValue(currentPopularPersonFromIndex)
-                ],
-                child: const MovieTile(),
-              );
-            },
+          return _SearchGridWidget(
+            totalItems: asyncData.value,
           );
         },
         error: (e) {
@@ -86,6 +60,52 @@ class MovieSearchGrid extends HookConsumerWidget {
         },
         loading: (_) => const AppLoader(),
       ),
+    );
+  }
+}
+
+class _SearchGridWidget extends HookConsumerWidget {
+  const _SearchGridWidget({
+    super.key,
+    required this.totalItems,
+  });
+
+  final int totalItems;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final focusNodes = useMemoized(() => List.generate(totalItems, (index) => FocusNode()),);
+    return AlignedGridView.count(
+      key: const PageStorageKey<String>(
+          'preserve_search_grid_scroll_and_focus'),
+      controller: ScrollController(),
+      itemCount: totalItems,
+      crossAxisCount: ResponsiveWidget.isMediumScreen(context)
+          ? 3
+          : ResponsiveWidget.isSmallScreen(context)
+              ? 2
+              : 6,
+      mainAxisSpacing: 10.0,
+      crossAxisSpacing: 10.0,
+      itemBuilder: (BuildContext context, int index) {
+        final AsyncValue<Movie> currentPopularPersonFromIndex = ref
+            .watch(paginatedSearchMoviesProvider(
+                PaginatedSearchProviderArgs(
+                    page: index ~/ 20,
+                    query: ref.watch(searchKeywordProvider))))
+            .whenData((pageData) => pageData.results[index % 20]);
+    
+        return ProviderScope(
+          overrides: [
+            currentPopularMovieProvider
+                .overrideWithValue(currentPopularPersonFromIndex)
+          ],
+          child: MovieTile(
+            index: index,
+            focusNode: focusNodes[index],
+          ),
+        );
+      },
     );
   }
 }

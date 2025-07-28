@@ -16,13 +16,17 @@ class MovieTile extends HookConsumerWidget {
   const MovieTile({
     this.autofocus = false,
     Key? key,
+    required this.index,
+    required this.focusNode,
   }) : super(key: key);
 
   final bool autofocus;
+  final int index;
+  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return RawAsyncMovieTile(autofocus: autofocus);
+    return RawAsyncMovieTile(autofocus: autofocus, focusNode: focusNode);
 
     //   final AsyncValue<Movie> movieAsync = ref.watch(currentPopularMovieProvider);
 
@@ -138,9 +142,11 @@ class RawAsyncMovieTile extends ConsumerWidget {
   const RawAsyncMovieTile({
     super.key,
     required this.autofocus,
+    required this.focusNode,
   });
 
   final bool autofocus;
+  final FocusNode focusNode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -148,6 +154,7 @@ class RawAsyncMovieTile extends ConsumerWidget {
 
     return InkWell(
       autofocus: autofocus,
+      focusNode: focusNode,
       hoverColor: Colors.transparent,
       highlightColor: Colors.transparent,
       focusColor: Colors.transparent,

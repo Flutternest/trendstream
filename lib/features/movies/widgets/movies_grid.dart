@@ -57,11 +57,6 @@ class MoviesGrid extends HookConsumerWidget {
                     // Navigate up in genre sidebar
                     if (currentGenreIndex.value > 0) {
                       currentGenreIndex.value--;
-                      moviesScrollController.animateTo(
-                        moviesScrollController.position.minScrollExtent,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
                       if (genreList.isNotEmpty) {
                         ref.read(selectedMovieGenreProvider.notifier).state =
                             genreList[currentGenreIndex.value];
@@ -100,11 +95,6 @@ class MoviesGrid extends HookConsumerWidget {
                         ref.read(selectedMovieGenreProvider.notifier).state =
                             genreList[currentGenreIndex.value];
                       }
-                      moviesScrollController.animateTo(
-                        moviesScrollController.position.minScrollExtent,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeOut,
-                      );
                     }
                   } else {
                     // Navigate down in movies grid
@@ -156,6 +146,16 @@ class MoviesGrid extends HookConsumerWidget {
                     isGenreSelectorCollapsed.value = true;
                     selectedSection.value = Sections.movies;
                     currentMovieIndex.value = 0;
+                    // Scroll to top when moving to movies grid
+                    Future.microtask(() {
+                      if (moviesScrollController.hasClients) {
+                        moviesScrollController.animateTo(
+                          moviesScrollController.position.minScrollExtent,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    });
                     moviesGridFocus.requestFocus();
                   } else {
                     // Navigate right in movies grid
@@ -183,6 +183,16 @@ class MoviesGrid extends HookConsumerWidget {
                     selectedSection.value = Sections.movies;
                     isGenreSelectorCollapsed.value = true;
                     currentMovieIndex.value = 0;
+                    // Scroll to top when selecting a genre
+                    Future.microtask(() {
+                      if (moviesScrollController.hasClients) {
+                        moviesScrollController.animateTo(
+                          moviesScrollController.position.minScrollExtent,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    });
                     moviesGridFocus.requestFocus();
                   } else if (selectedSection.value == Sections.movies) {
                     // Navigate to movie detail (handled by MovieTile)
@@ -211,6 +221,8 @@ class MoviesGrid extends HookConsumerWidget {
           return null;
         }, []);
 
+       
+
         return Focus(
           onKeyEvent: (node, event) => handleKeyPress(event)
               ? KeyEventResult.handled
@@ -231,6 +243,7 @@ class MoviesGrid extends HookConsumerWidget {
                     if (genreIndex != -1) {
                       currentGenreIndex.value = genreIndex;
                     }
+
                     Future.microtask(() {
                       ref.invalidate(popularMoviesCountProvider);
                       ref.invalidate(paginatedPopularMoviesProvider(0));
@@ -352,6 +365,21 @@ class _MoviesGridWidget extends HookConsumerWidget {
       }
       return null;
     }, [isFocused, currentFocusedIndex, totalItems]);
+
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          if (scrollController.hasClients) {
+            scrollController.animateTo(
+              scrollController.position.minScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
+      });
+      return null;
+    }, [totalItems]);
 
     return AlignedGridView.count(
       key:

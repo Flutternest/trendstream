@@ -1,6 +1,5 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -16,54 +15,254 @@ import '../controllers/popular_paginated_movies_provider.dart';
 import '../models/movie/movie.dart';
 import 'movie_item.dart';
 
+enum Sections {
+  genre,
+  movies,
+}
+
 class MoviesGrid extends HookConsumerWidget {
   const MoviesGrid({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final selectedSection = useState(Sections.genre);
     final popularMoviesCount = ref.watch(popularMoviesCountProvider);
     final asyncGenres = ref.watch(genreListProvider);
     final selectedGenre = ref.watch(selectedMovieGenreProvider);
     final isGenreSelectorCollapsed = useState(false);
+
+    // Focus management state
+    final currentGenreIndex = useState(0);
+    final currentMovieIndex = useState(0);
+
+    // Focus nodes
+    final genreSidebarFocus = useFocusNode(debugLabel: 'GenreSidebar');
+    final moviesGridFocus = useFocusNode(debugLabel: 'MoviesGrid');
+
+    // Scroll controller for movies grid
+    final moviesScrollController = useScrollController();
+
     return asyncGenres.when(
       data: (genres) {
-        return FocusTraversalGroup(
+        // Get the list of genres for focus management
+        final genreList = genres;
+
+        // Handle keyboard navigation
+        final handleKeyPress = useCallback(
+          (KeyEvent event) {
+            if (event is KeyDownEvent) {
+              switch (event.logicalKey) {
+                case LogicalKeyboardKey.arrowUp:
+                  if (selectedSection.value == Sections.genre) {
+                    // Navigate up in genre sidebar
+                    if (currentGenreIndex.value > 0) {
+                      currentGenreIndex.value--;
+                      moviesScrollController.animateTo(
+                        moviesScrollController.position.minScrollExtent,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                      if (genreList.isNotEmpty) {
+                        ref.read(selectedMovieGenreProvider.notifier).state =
+                            genreList[currentGenreIndex.value];
+                      }
+                    } else {
+                      return false;
+                    }
+                  } else {
+                    // Navigate up in movies grid
+                    final totalMovies = popularMoviesCount.asData?.value ?? 0;
+                    final crossAxisCount =
+                        ResponsiveWidget.isMediumScreen(context)
+                            ? 4
+                            : ResponsiveWidget.isSmallScreen(context)
+                                ? 2
+                                : 6;
+                    final newIndex = currentMovieIndex.value - crossAxisCount;
+                    if (newIndex >= 0 && totalMovies > 0) {
+                      currentMovieIndex.value = newIndex;
+                      _scrollToMovieItem(
+                        currentMovieIndex.value,
+                        totalMovies,
+                        moviesScrollController,
+                        crossAxisCount,
+                      );
+                    }
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.arrowDown:
+                  if (selectedSection.value == Sections.genre) {
+                    // Navigate down in genre sidebar
+                    if (currentGenreIndex.value < genreList.length - 1) {
+                      currentGenreIndex.value++;
+                      if (genreList.isNotEmpty) {
+                        ref.read(selectedMovieGenreProvider.notifier).state =
+                            genreList[currentGenreIndex.value];
+                      }
+                      moviesScrollController.animateTo(
+                        moviesScrollController.position.minScrollExtent,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    }
+                  } else {
+                    // Navigate down in movies grid
+                    final totalMovies = popularMoviesCount.asData?.value ?? 0;
+                    final crossAxisCount =
+                        ResponsiveWidget.isMediumScreen(context)
+                            ? 4
+                            : ResponsiveWidget.isSmallScreen(context)
+                                ? 2
+                                : 6;
+                    final newIndex = currentMovieIndex.value + crossAxisCount;
+                    if (newIndex < totalMovies) {
+                      currentMovieIndex.value = newIndex;
+                      _scrollToMovieItem(
+                        currentMovieIndex.value,
+                        totalMovies,
+                        moviesScrollController,
+                        crossAxisCount,
+                      );
+                    }
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.arrowLeft:
+                  if (selectedSection.value == Sections.movies) {
+                    // Move from movies to genre sidebar or navigate left in movies
+                    final crossAxisCount =
+                        ResponsiveWidget.isMediumScreen(context)
+                            ? 4
+                            : ResponsiveWidget.isSmallScreen(context)
+                                ? 2
+                                : 6;
+                    if (currentMovieIndex.value % crossAxisCount > 0) {
+                      currentMovieIndex.value--;
+                    } else {
+                      // Go back to genre sidebar
+                      selectedSection.value = Sections.genre;
+                      isGenreSelectorCollapsed.value = false;
+                      genreSidebarFocus.requestFocus();
+                    }
+                  } else {
+                    return false;
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.arrowRight:
+                  if (selectedSection.value == Sections.genre) {
+                    // Move from genre sidebar to movies
+                    isGenreSelectorCollapsed.value = true;
+                    selectedSection.value = Sections.movies;
+                    currentMovieIndex.value = 0;
+                    moviesGridFocus.requestFocus();
+                  } else {
+                    // Navigate right in movies grid
+                    final totalMovies = popularMoviesCount.asData?.value ?? 0;
+                    final crossAxisCount =
+                        ResponsiveWidget.isMediumScreen(context)
+                            ? 4
+                            : ResponsiveWidget.isSmallScreen(context)
+                                ? 2
+                                : 6;
+                    if ((currentMovieIndex.value + 1) % crossAxisCount != 0 &&
+                        currentMovieIndex.value + 1 < totalMovies) {
+                      currentMovieIndex.value++;
+                    }
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.select:
+                case LogicalKeyboardKey.enter:
+                  if (selectedSection.value == Sections.genre &&
+                      genreList.isNotEmpty) {
+                    // Select genre and move to movies
+                    ref.read(selectedMovieGenreProvider.notifier).state =
+                        genreList[currentGenreIndex.value];
+                    selectedSection.value = Sections.movies;
+                    isGenreSelectorCollapsed.value = true;
+                    currentMovieIndex.value = 0;
+                    moviesGridFocus.requestFocus();
+                  } else if (selectedSection.value == Sections.movies) {
+                    // Navigate to movie detail (handled by MovieTile)
+                    final totalMovies = popularMoviesCount.asData?.value ?? 0;
+                    if (currentMovieIndex.value < totalMovies) {
+                      // The navigation will be handled by the MovieTile's onTap
+                    }
+                  }
+                  return true;
+              }
+            }
+            return false;
+          },
+          [
+            genreList,
+            selectedSection.value,
+            currentGenreIndex.value,
+            currentMovieIndex.value,
+            popularMoviesCount.asData?.value,
+          ],
+        );
+
+        // Set up initial focus
+        useEffect(() {
+          genreSidebarFocus.requestFocus();
+          return null;
+        }, []);
+
+        return Focus(
+          onKeyEvent: (node, event) => handleKeyPress(event)
+              ? KeyEventResult.handled
+              : KeyEventResult.ignored,
           child: Row(
             children: [
-              FocusTraversalOrder(
-                order: const NumericFocusOrder(1),
+              // Genre Selector with enhanced focus management
+              Focus(
+                focusNode: genreSidebarFocus,
                 child: GenreSelector(
-                    genres: genres,
-                    selectedGenre: selectedGenre,
-                    onGenreSelected: (genre) {
-                      ref.read(selectedMovieGenreProvider.notifier).state =
-                          genre;
+                  genres: genres,
+                  selectedGenre: selectedGenre,
+                  onGenreSelected: (genre) {
+                    ref.read(selectedMovieGenreProvider.notifier).state = genre;
+                    // Update current genre index
+                    final genreIndex =
+                        genres.indexWhere((g) => g.id == genre.id);
+                    if (genreIndex != -1) {
+                      currentGenreIndex.value = genreIndex;
+                    }
+                    Future.microtask(() {
+                      ref.invalidate(popularMoviesCountProvider);
+                      ref.invalidate(paginatedPopularMoviesProvider(0));
+                    });
+                  },
+                  isCollapsed: isGenreSelectorCollapsed,
+                  currentFocusedIndex: currentGenreIndex.value,
+                  isFocused: selectedSection.value == Sections.genre,
+                ),
+              ),
+              Expanded(
+                child: popularMoviesCount.map(
+                  data: (asyncData) {
+                    return Focus(
+                      focusNode: moviesGridFocus,
+                      child: _MoviesGridWidget(
+                        totalItems: asyncData.value,
+                        currentFocusedIndex: currentMovieIndex.value,
+                        isFocused: selectedSection.value == Sections.movies,
+                        scrollController: moviesScrollController,
+                      ),
+                    );
+                  },
+                  error: (e) => ErrorView(
+                    onRetry: () {
                       Future.microtask(() {
                         ref.invalidate(popularMoviesCountProvider);
                         ref.invalidate(paginatedPopularMoviesProvider(0));
                       });
                     },
-                    isCollapsed: isGenreSelectorCollapsed),
-              ),
-              Expanded(
-                child: FocusTraversalOrder(
-                  order: const NumericFocusOrder(2),
-                  child: popularMoviesCount.map(
-                    data: (asyncData) {
-                      return _MoviesGridWidget(
-                        totalItems: asyncData.value,
-                      );
-                    },
-                    error: (e) => ErrorView(
-                      onRetry: () {
-                        Future.microtask(() {
-                          ref.invalidate(popularMoviesCountProvider);
-                          ref.invalidate(paginatedPopularMoviesProvider(0));
-                        });
-                      },
-                    ),
-                    loading: (_) => const AppLoader(),
                   ),
+                  loading: (_) => const AppLoader(),
                 ),
               ),
             ],
@@ -80,22 +279,84 @@ class MoviesGrid extends HookConsumerWidget {
       loading: () => const AppLoader(),
     );
   }
+
+  void _scrollToMovieItem(
+    int itemIndex,
+    int totalItems,
+    ScrollController controller,
+    int crossAxisCount,
+  ) {
+    if (totalItems == 0) return;
+
+    final currentRow = itemIndex ~/ crossAxisCount;
+
+    // Calculate approximate item height including spacing
+    const itemHeight =
+        400.0; // Approximate height based on aspect ratio and spacing
+    final targetScrollOffset = currentRow * itemHeight;
+
+    // Get the viewport height to determine if scrolling is needed
+    final viewportHeight = controller.position.viewportDimension;
+    final maxScrollOffset = controller.position.maxScrollExtent;
+
+    // Only scroll if the item is outside the current viewport
+    final currentScrollOffset = controller.offset;
+    final itemTopOffset = targetScrollOffset;
+    final itemBottomOffset = targetScrollOffset + itemHeight;
+
+    if (itemTopOffset < currentScrollOffset) {
+      // Item is above viewport, scroll up
+      controller.animateTo(
+        itemTopOffset,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    } else if (itemBottomOffset > currentScrollOffset + viewportHeight) {
+      // Item is below viewport, scroll down
+      final newOffset = itemBottomOffset - viewportHeight;
+      controller.animateTo(
+        newOffset.clamp(0.0, maxScrollOffset),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
 }
 
 class _MoviesGridWidget extends HookConsumerWidget {
   const _MoviesGridWidget({
     super.key,
     required this.totalItems,
+    required this.currentFocusedIndex,
+    required this.isFocused,
+    required this.scrollController,
   });
 
   final int totalItems;
+  final int currentFocusedIndex;
+  final bool isFocused;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final focusNodes = useMemoized(() => List.generate(totalItems, (index) => FocusNode()),);
+    final focusNodes = useMemoized(
+      () => List.generate(totalItems, (index) => FocusNode()),
+    );
+
+    // Set focus to current focused index when section becomes focused
+    useEffect(() {
+      if (isFocused && currentFocusedIndex < totalItems) {
+        Future.microtask(() {
+          focusNodes[currentFocusedIndex].requestFocus();
+        });
+      }
+      return null;
+    }, [isFocused, currentFocusedIndex, totalItems]);
+
     return AlignedGridView.count(
-      key: const PageStorageKey<String>(
-          'preserve_movies_grid_scroll_and_focus'),
+      key:
+          const PageStorageKey<String>('preserve_movies_grid_scroll_and_focus'),
+      controller: scrollController,
       itemCount: totalItems,
       crossAxisCount: ResponsiveWidget.isMediumScreen(context)
           ? 4
@@ -106,22 +367,20 @@ class _MoviesGridWidget extends HookConsumerWidget {
       crossAxisSpacing: 10.0,
       cacheExtent: 100,
       itemBuilder: (BuildContext context, int index) {
-        final AsyncValue<Movie> currentPopularMovieFromIndex =
-            ref
-                .watch(paginatedPopularMoviesProvider(
-                    index ~/ 20))
-                .whenData((pageData) =>
-                    pageData.results[index % 20]);
-    
+        final AsyncValue<Movie> currentPopularMovieFromIndex = ref
+            .watch(paginatedPopularMoviesProvider(index ~/ 20))
+            .whenData((pageData) => pageData.results[index % 20]);
+
         return ProviderScope(
           overrides: [
-            currentPopularMovieProvider.overrideWithValue(
-                currentPopularMovieFromIndex)
+            currentPopularMovieProvider
+                .overrideWithValue(currentPopularMovieFromIndex)
           ],
           child: MovieTile(
             autofocus: false,
             index: index,
             focusNode: focusNodes[index],
+            isFocused: isFocused && currentFocusedIndex == index,
           ),
         );
       },

@@ -1,3 +1,4 @@
+import "package:flutter/material.dart";
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latest_movies/core/constants/colors.dart';
@@ -6,8 +7,6 @@ import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/features/movies/controllers/current_popular_movies_provider.dart';
 
 import '../../../../core/utilities/design_utility.dart';
-import "package:flutter/material.dart";
-
 import '../../../core/config/config.dart';
 import '../../../core/shared_widgets/image.dart';
 import '../models/movie/movie.dart';
@@ -18,15 +17,21 @@ class MovieTile extends HookConsumerWidget {
     Key? key,
     required this.index,
     required this.focusNode,
+    this.isFocused = false,
   }) : super(key: key);
 
   final bool autofocus;
   final int index;
   final FocusNode focusNode;
+  final bool isFocused;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return RawAsyncMovieTile(autofocus: autofocus, focusNode: focusNode);
+    return RawAsyncMovieTile(
+      autofocus: autofocus,
+      focusNode: focusNode,
+      isFocused: isFocused,
+    );
 
     //   final AsyncValue<Movie> movieAsync = ref.watch(currentPopularMovieProvider);
 
@@ -143,10 +148,12 @@ class RawAsyncMovieTile extends ConsumerWidget {
     super.key,
     required this.autofocus,
     required this.focusNode,
+    required this.isFocused,
   });
 
   final bool autofocus;
   final FocusNode focusNode;
+  final bool isFocused;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -165,7 +172,7 @@ class RawAsyncMovieTile extends ConsumerWidget {
             arguments: movieAsync.asData!.value.id);
       },
       child: Builder(builder: (context) {
-        final bool hasFocus = Focus.of(context).hasPrimaryFocus;
+        final bool hasFocus = Focus.of(context).hasPrimaryFocus || isFocused;
         return Container(
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(

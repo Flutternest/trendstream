@@ -39,6 +39,9 @@ class MoviesGrid extends HookConsumerWidget {
     final genreSidebarFocus = useFocusNode(debugLabel: 'GenreSidebar');
     final moviesGridFocus = useFocusNode(debugLabel: 'MoviesGrid');
 
+    // Scroll controller for genre sidebar
+    final genreSidebarScrollController = useScrollController();
+
     // Scroll controller for movies grid
     final moviesScrollController = useScrollController();
 
@@ -46,6 +49,13 @@ class MoviesGrid extends HookConsumerWidget {
       data: (genres) {
         // Get the list of genres for focus management
         final genreList = genres;
+        final genreGlobalKeys = genreList.map((genre) => GlobalKey()).toList();
+
+        final crossAxisCount = ResponsiveWidget.isMediumScreen(context)
+            ? 4
+            : ResponsiveWidget.isSmallScreen(context)
+                ? 2
+                : 6;
 
         // Handle keyboard navigation
         final handleKeyPress = useCallback(
@@ -57,22 +67,19 @@ class MoviesGrid extends HookConsumerWidget {
                     // Navigate up in genre sidebar
                     if (currentGenreIndex.value > 0) {
                       currentGenreIndex.value--;
+                      _scrollToGenreItem(
+                        genreGlobalKeys[currentGenreIndex.value],
+                      );
                       if (genreList.isNotEmpty) {
                         ref.read(selectedMovieGenreProvider.notifier).state =
                             genreList[currentGenreIndex.value];
                       }
                     } else {
-                      return false;
+                      return true;
                     }
                   } else {
                     // Navigate up in movies grid
                     final totalMovies = popularMoviesCount.asData?.value ?? 0;
-                    final crossAxisCount =
-                        ResponsiveWidget.isMediumScreen(context)
-                            ? 4
-                            : ResponsiveWidget.isSmallScreen(context)
-                                ? 2
-                                : 6;
                     final newIndex = currentMovieIndex.value - crossAxisCount;
                     if (newIndex >= 0 && totalMovies > 0) {
                       currentMovieIndex.value = newIndex;
@@ -91,20 +98,20 @@ class MoviesGrid extends HookConsumerWidget {
                     // Navigate down in genre sidebar
                     if (currentGenreIndex.value < genreList.length - 1) {
                       currentGenreIndex.value++;
+                      _scrollToGenreItem(
+                        genreGlobalKeys[currentGenreIndex.value],
+                      );
                       if (genreList.isNotEmpty) {
                         ref.read(selectedMovieGenreProvider.notifier).state =
                             genreList[currentGenreIndex.value];
                       }
+                    } else {
+                      return true;
                     }
                   } else {
                     // Navigate down in movies grid
                     final totalMovies = popularMoviesCount.asData?.value ?? 0;
-                    final crossAxisCount =
-                        ResponsiveWidget.isMediumScreen(context)
-                            ? 4
-                            : ResponsiveWidget.isSmallScreen(context)
-                                ? 2
-                                : 6;
+
                     final newIndex = currentMovieIndex.value + crossAxisCount;
                     if (newIndex < totalMovies) {
                       currentMovieIndex.value = newIndex;
@@ -121,12 +128,6 @@ class MoviesGrid extends HookConsumerWidget {
                 case LogicalKeyboardKey.arrowLeft:
                   if (selectedSection.value == Sections.movies) {
                     // Move from movies to genre sidebar or navigate left in movies
-                    final crossAxisCount =
-                        ResponsiveWidget.isMediumScreen(context)
-                            ? 4
-                            : ResponsiveWidget.isSmallScreen(context)
-                                ? 2
-                                : 6;
                     if (currentMovieIndex.value % crossAxisCount > 0) {
                       currentMovieIndex.value--;
                     } else {
@@ -134,6 +135,9 @@ class MoviesGrid extends HookConsumerWidget {
                       selectedSection.value = Sections.genre;
                       isGenreSelectorCollapsed.value = false;
                       genreSidebarFocus.requestFocus();
+                      _scrollToGenreItem(
+                        genreGlobalKeys[currentGenreIndex.value],
+                      );
                     }
                   } else {
                     return false;
@@ -146,6 +150,7 @@ class MoviesGrid extends HookConsumerWidget {
                     isGenreSelectorCollapsed.value = true;
                     selectedSection.value = Sections.movies;
                     currentMovieIndex.value = 0;
+
                     // Scroll to top when moving to movies grid
                     Future.microtask(() {
                       if (moviesScrollController.hasClients) {
@@ -160,15 +165,14 @@ class MoviesGrid extends HookConsumerWidget {
                   } else {
                     // Navigate right in movies grid
                     final totalMovies = popularMoviesCount.asData?.value ?? 0;
-                    final crossAxisCount =
-                        ResponsiveWidget.isMediumScreen(context)
-                            ? 4
-                            : ResponsiveWidget.isSmallScreen(context)
-                                ? 2
-                                : 6;
                     if ((currentMovieIndex.value + 1) % crossAxisCount != 0 &&
                         currentMovieIndex.value + 1 < totalMovies) {
                       currentMovieIndex.value++;
+                    } else {
+                      _scrollToGenreItem(
+                        genreGlobalKeys[currentGenreIndex.value],
+                      );
+                      return false;
                     }
                   }
                   return true;
@@ -183,6 +187,7 @@ class MoviesGrid extends HookConsumerWidget {
                     selectedSection.value = Sections.movies;
                     isGenreSelectorCollapsed.value = true;
                     currentMovieIndex.value = 0;
+
                     // Scroll to top when selecting a genre
                     Future.microtask(() {
                       if (moviesScrollController.hasClients) {
@@ -221,8 +226,6 @@ class MoviesGrid extends HookConsumerWidget {
           return null;
         }, []);
 
-       
-
         return Focus(
           onKeyEvent: (node, event) => handleKeyPress(event)
               ? KeyEventResult.handled
@@ -252,6 +255,8 @@ class MoviesGrid extends HookConsumerWidget {
                   isCollapsed: isGenreSelectorCollapsed,
                   currentFocusedIndex: currentGenreIndex.value,
                   isFocused: selectedSection.value == Sections.genre,
+                  scrollController: genreSidebarScrollController,
+                  genreGlobalKeys: genreGlobalKeys,
                 ),
               ),
               Expanded(
@@ -331,6 +336,20 @@ class MoviesGrid extends HookConsumerWidget {
         newOffset.clamp(0.0, maxScrollOffset),
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _scrollToGenreItem(
+    GlobalKey genreGlobalKey,
+  ) {
+    final context = genreGlobalKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+        alignment: 0.5,
       );
     }
   }

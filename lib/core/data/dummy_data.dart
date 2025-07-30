@@ -8,20 +8,12 @@ final List<Genre> dummyGenres = [
   const Genre(id: 16, name: "Animation"),
   const Genre(id: 35, name: "Comedy"),
   const Genre(id: 80, name: "Crime"),
-  const Genre(id: 99, name: "Documentary"),
   const Genre(id: 18, name: "Drama"),
   const Genre(id: 10751, name: "Family"),
   const Genre(id: 14, name: "Fantasy"),
   const Genre(id: 36, name: "History"),
   const Genre(id: 27, name: "Horror"),
-  const Genre(id: 10402, name: "Music"),
-  const Genre(id: 9648, name: "Mystery"),
-  const Genre(id: 10749, name: "Romance"),
-  const Genre(id: 878, name: "Science Fiction"),
-  const Genre(id: 10770, name: "TV Movie"),
-  const Genre(id: 53, name: "Thriller"),
-  const Genre(id: 10752, name: "War"),
-  const Genre(id: 37, name: "Western"),
+
 ];
 
 // Action Movies (10 movies)
@@ -108,6 +100,63 @@ final List<Movie> dramaMovies = [
   Movie(id: 12473, title: "Fight Club", overview: "A ticking-time-bomb insomniac and a slippery soap salesman channel primal male aggression into a shocking new form of therapy.", posterPath: "/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg", backdropPath: "/mMZRKb3NVo5ZeSPEVaKQydxQ4fm.jpg", releaseDate: "1999-10-15", voteAverage: 8.8, voteCount: 26280, popularity: 61.416, adult: false, video: false, genres: [dummyGenres[6]]),
 ];
 
+
+final List<Movie> familyMovies = [
+  Movie(id: 550988, title: "Frozen II", overview: "Elsa, Anna, Kristoff, Olaf and Sven leave Arendelle for an ancient forest...", posterPath: "/frozen2_poster.jpg", backdropPath: "/frozen2_back.jpg", releaseDate: "2019-11-20", voteAverage: 7.2, voteCount: 12000, popularity: 80.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 13415, title: "The Lego Movie", overview: "An ordinary LEGO construction worker, thought to be the prophesied 'Special', is recruited...", posterPath: "/lego_movie.jpg", backdropPath: "/lego_back.jpg", releaseDate: "2014-02-07", voteAverage: 7.7, voteCount: 14000, popularity: 60.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 205596, title: "Inside Out", overview: "After young Riley is uprooted from her Midwest life and moves to San Francisco...", posterPath: "/inside_out.jpg", backdropPath: "/inside_back.jpg", releaseDate: "2015-06-19", voteAverage: 8.1, voteCount: 19000, popularity: 75.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 27205, title: "How to Train Your Dragon", overview: "A Viking teenager who aspires to hunt dragons becomes the unlikely friend of a young dragon...", posterPath: "/httyd.jpg", backdropPath: "/httyd_back.jpg", releaseDate: "2010-03-26", voteAverage: 8.1, voteCount: 15000, popularity: 65.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 152601, title: "Moana", overview: "In Ancient Polynesia, when a terrible curse incurred by Maui reaches Moana's island...", posterPath: "/moana.jpg", backdropPath: "/moana_back.jpg", releaseDate: "2016-11-23", voteAverage: 7.6, voteCount: 13000, popularity: 70.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 127380, title: "The Lego Batman Movie", overview: "A cooler‑than‑ever Bruce Wayne must not only deal with the criminals of Gotham City...", posterPath: "/lego_batman.jpg", backdropPath: "/lego_batman_back.jpg", releaseDate: "2017-02-10", voteAverage: 7.2, voteCount: 9000, popularity: 55.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 301528, title: "The Lego Movie 2: The Second Part", overview: "It's been five years since everything was awesome and the citizens are facing a HUGE LEGO DUPLO®...", posterPath: "/lego2.jpg", backdropPath: "/...jpg", releaseDate: "2019-02-08", voteAverage: 6.6, voteCount: 8000, popularity: 50.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 671, title: "Harry Potter and the Sorcerer's Stone", overview: "An orphaned boy enrolls in a school of wizardry...", posterPath: "/hp1.jpg", backdropPath: "/hp1_back.jpg", releaseDate: "2001-11-16", voteAverage: 7.9, voteCount: 14000, popularity: 85.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 8587, title: "Charlotte's Web", overview: "Wilbur the pig tries to avoid slaughter with the help of a friendly spider named Charlotte...", posterPath: "/charlotte.jpg", backdropPath: "/charlotte_back.jpg", releaseDate: "2006-12-14", voteAverage: 6.3, voteCount: 3000, popularity: 25.0, adult: false, video: false, genres: [dummyGenres[6]]),
+  Movie(id: 209112, title: "How to Train Your Dragon 2", overview: "When Hiccup and Toothless discover a secret ice cave that houses hundreds of new wild dragons...", posterPath: "/httyd2.jpg", backdropPath: "/httyd2_back.jpg", releaseDate: "2014-06-13", voteAverage: 7.8, voteCount: 13500, popularity: 62.0, adult: false, video: false, genres: [dummyGenres[6]]),
+];
+
+
+final List<Movie> fantasyMovies = [
+  Movie(id: 10136, title: "The Hobbit: An Unexpected Journey", overview: "A reluctant hobbit, Bilbo Baggins, journeys to the Lonely Mountain...", posterPath: "/hobbit1.jpg", backdropPath: "/hobbit1_back.jpg", releaseDate: "2012-12-14", voteAverage: 7.8, voteCount: 14000, popularity: 70.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 120, title: "The Lord of the Rings: The Fellowship of the Ring", overview: "A meek Hobbit from the Shire and eight companions set out on a journey...", posterPath: "/lotr1.jpg", backdropPath: "/lotr1_back.jpg", releaseDate: "2001-12-19", voteAverage: 8.8, voteCount: 21000, popularity: 90.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 122, title: "The Lord of the Rings: The Two Towers", overview: "While Frodo and Sam edge closer to Mordor...", posterPath: "/lotr2.jpg", backdropPath: "/lotr2_back.jpg", releaseDate: "2002-12-18", voteAverage: 8.7, voteCount: 18000, popularity: 85.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 124, title: "The Lord of the Rings: The Return of the King", overview: "Gandalf and Aragorn lead the World of Men against Sauron’s army...", posterPath: "/lotr3.jpg", backdropPath: "/lotr3_back.jpg", releaseDate: "2003-12-17", voteAverage: 8.9, voteCount: 22000, popularity: 95.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 10197, title: "How to Train Your Dragon", overview: "...", posterPath: "/httyd.jpg", backdropPath: "/httyd_back.jpg", releaseDate: "2010-03-26", voteAverage: 8.1, voteCount: 15000, popularity: 65.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 671, title: "Harry Potter and the Sorcerer's Stone", overview: "...", posterPath: "/hp1.jpg", backdropPath: "/hp1_back.jpg", releaseDate: "2001-11-16", voteAverage: 7.9, voteCount: 14000, popularity: 85.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 12445, title: "Maleficent", overview: "A vengeful fairy becomes the protector of Aurora...", posterPath: "/maleficent.jpg", backdropPath: "/maleficent_back.jpg", releaseDate: "2014-05-30", voteAverage: 7.0, voteCount: 10000, popularity: 60.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 181812, title: "The Hobbit: The Desolation of Smaug", overview: "...", posterPath: "/hobbit2.jpg", backdropPath: "/hobbit2_back.jpg", releaseDate: "2013-12-13", voteAverage: 8.3, voteCount: 13000, popularity: 75.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 122917, title: "The Green Knight", overview: "A mysterious journey based on the medieval poem ‘Sir Gawain and the Green Knight’", posterPath: "/green_knight.jpg", backdropPath: "/green_knight_back.jpg", releaseDate: "2021-07-30", voteAverage: 6.7, voteCount: 2000, popularity: 40.0, adult: false, video: false, genres: [dummyGenres[7]]),
+  Movie(id: 32657, title: "Stardust", overview: "In a countryside town bordering a magical land, a young man promises to retrieve a fallen star...", posterPath: "/stardust.jpg", backdropPath: "/stardust_back.jpg", releaseDate: "2007-08-10", voteAverage: 7.6, voteCount: 8000, popularity: 50.0, adult: false, video: false, genres: [dummyGenres[7]]),
+];
+
+
+final List<Movie> historyMovies = [
+  Movie(id: 280, title: "The Pianist", overview: "A Polish Jewish musician struggles to survive the destruction of the Warsaw ghetto of World War II.", posterPath: "/pianist.jpg", backdropPath: "/pianist_back.jpg", releaseDate: "2002-09-25", voteAverage: 8.5, voteCount: 17000, popularity: 60.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 424, title: "Schindler's List", overview: "True story of how businessman Oskar Schindler saved over a thousand Jews...", posterPath: "/schindler.jpg", backdropPath: "/schindler_back.jpg", releaseDate: "1993-12-15", voteAverage: 8.9, voteCount: 14000, popularity: 55.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 857, title: "Gladiator", overview: "A former Roman General sets out to exact vengeance...", posterPath: "/gladiator.jpg", backdropPath: "/gladiator_back.jpg", releaseDate: "2000-05-01", voteAverage: 8.5, voteCount: 16000, popularity: 70.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 8572, title: "Saving Private Ryan", overview: "Following the Normandy Landings, a group of U.S. soldiers go behind enemy lines...", posterPath: "/spr.jpg", backdropPath: "/spr_back.jpg", releaseDate: "1998-07-24", voteAverage: 8.6, voteCount: 19000, popularity: 85.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 240, title: "The Godfather Part II", overview: "In the continuing saga of the Corleone crime family...", posterPath: "/g2.jpg", backdropPath: "/g2_back.jpg", releaseDate: "1974-12-20", voteAverage: 9.0, voteCount: 11800, popularity: 65.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 98, title: "Becoming Jane", overview: "Fictional account of Jane Austen’s early life...", posterPath: "/becoming_jane.jpg", backdropPath: "/bj_back.jpg", releaseDate: "2007-03-16", voteAverage: 6.7, voteCount: 4000, popularity: 30.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 201, title: "The Last of the Mohicans", overview: "Uncovering the secrets of a heritage that brings love and war...", posterPath: "/mohicans.jpg", backdropPath: "/mohicans_back.jpg", releaseDate: "1992-09-25", voteAverage: 7.7, voteCount: 8000, popularity: 45.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 361743, title: "Harriet", overview: "Biographical film about Harriet Tubman's escape from slavery...", posterPath: "/harriet.jpg", backdropPath: "/harriet_back.jpg", releaseDate: "2019-11-01", voteAverage: 6.9, voteCount: 5000, popularity: 40.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 22491, title: "12 Years a Slave", overview: "In the antebellum United States, Solomon Northup, a free black man from upstate New York...", posterPath: "/12years.jpg", backdropPath: "/12years_back.jpg", releaseDate: "2013-10-18", voteAverage: 8.1, voteCount: 10000, popularity: 55.0, adult: false, video: false, genres: [dummyGenres[8]]),
+  Movie(id: 38915, title: "The Imitation Game", overview: "During World War II, the English mathematical genius Alan Turing tries to crack the German Enigma code...", posterPath: "/imitation.jpg", backdropPath: "/imitation_back.jpg", releaseDate: "2014-11-28", voteAverage: 8.0, voteCount: 12000, popularity: 60.0, adult: false, video: false, genres: [dummyGenres[8]]),
+];
+
+
+final List<Movie> horrorMovies = [
+  Movie(id: 389, title: "The Exorcist", overview: "When a girl is possessed by a mysterious entity, her mother seeks the help of two priests...", posterPath: "/exorcist.jpg", backdropPath: "/exorcist_back.jpg", releaseDate: "1973-12-26", voteAverage: 8.0, voteCount: 16000, popularity: 70.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 983, title: "The Shining", overview: "A family heads to an isolated hotel for the winter where a sinister presence influences the father into violence...", posterPath: "/shining.jpg", backdropPath: "/shining_back.jpg", releaseDate: "1980-05-23", voteAverage: 8.4, voteCount: 14000, popularity: 65.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 1080, title: "Alien", overview: "After a space merchant vessel receives an unknown transmission as a distress call, one of the crew is attacked...", posterPath: "/alien.jpg", backdropPath: "/alien_back.jpg", releaseDate: "1979-05-25", voteAverage: 8.4, voteCount: 12000, popularity: 75.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 104, title: "Psycho", overview: "A Phoenix secretary embezzles \$40,000 and checks into a remote motel run by a young man under his mother's domination.", posterPath: "/psycho.jpg", backdropPath: "/psycho_back.jpg", releaseDate: "1960-06-16", voteAverage: 8.5, voteCount: 9000, popularity: 50.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 895, title: "The Silence of the Lambs", overview: "A young FBI cadet must confide in an incarcerated and manipulative killer to receive his help...", posterPath: "/silence.jpg", backdropPath: "/silence_back.jpg", releaseDate: "1991-02-14", voteAverage: 8.6, voteCount: 19000, popularity: 80.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 330, title: "A Nightmare on Elm Street", overview: "The monstrous spirit of a slain janitor seeks revenge by invading the dreams of teenagers...", posterPath: "/elmstreet.jpg", backdropPath: "/elmstreet_back.jpg", releaseDate: "1984-11-09", voteAverage: 7.5, voteCount: 8000, popularity: 55.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 284053, title: "Hereditary", overview: "A grieving family is haunted by tragic and disturbing occurrences and begin to unravel dark secrets.", posterPath: "/hereditary.jpg", backdropPath: "/hereditary_back.jpg", releaseDate: "2018-06-08", voteAverage: 7.3, voteCount: 10000, popularity: 65.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 948, title: "Evil Dead II", overview: "Ash Williams and his girlfriend go to a cabin in the woods where demonic spirits possess them...", posterPath: "/evildead2.jpg", backdropPath: "/evildead2_back.jpg", releaseDate: "1987-03-13", voteAverage: 7.6, voteCount: 6000, popularity: 45.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 246655, title: "The Conjuring", overview: "Paranormal investigators Ed and Lorraine Warren work to help a family terrorized by a dark presence...", posterPath: "/conjuring.jpg", backdropPath: "/conjuring_back.jpg", releaseDate: "2013-07-19", voteAverage: 7.5, voteCount: 11000, popularity: 70.0, adult: false, video: false, genres: [dummyGenres[9]]),
+  Movie(id: 5, title: "Jaws", overview: "When a killer shark unleashes chaos on a beach resort, a police chief, a marine scientist and a grizzled fisherman set out to stop it.", posterPath: "/jaws.jpg", backdropPath: "/jaws_back.jpg", releaseDate: "1975-06-20", voteAverage: 8.0, voteCount: 13000, popularity: 72.0, adult: false, video: false, genres: [dummyGenres[9]]),
+];
+
+
 // Combine all movies
 final List<Movie> dummyMovies = [
   ...actionMovies,
@@ -116,4 +165,8 @@ final List<Movie> dummyMovies = [
   ...comedyMovies,
   ...crimeMovies,
   ...dramaMovies,
+  ...familyMovies,
+  ...fantasyMovies,
+  ...historyMovies,
+  ...horrorMovies,
 ]; 

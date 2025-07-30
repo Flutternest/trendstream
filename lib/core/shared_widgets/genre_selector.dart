@@ -13,14 +13,18 @@ class GenreSelector extends HookWidget {
     required this.isCollapsed,
     this.currentFocusedIndex = 0,
     this.isFocused = false,
+    required this.scrollController,
+    required this.genreGlobalKeys,
   });
 
   final Genre? selectedGenre;
   final List<Genre> genres;
+  final List<GlobalKey> genreGlobalKeys;
   final Function(Genre) onGenreSelected;
   final ValueNotifier<bool> isCollapsed;
   final int currentFocusedIndex;
   final bool isFocused;
+  final ScrollController scrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +36,23 @@ class GenreSelector extends HookWidget {
 
     // Set focus to current focused index when section becomes focused
     useEffect(() {
-      if (isFocused && currentFocusedIndex < genres.length) {
-        Future.microtask(() {
-          focusNodes[currentFocusedIndex].requestFocus();
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (isFocused && currentFocusedIndex < genres.length) {
+          Future.microtask(() {
+            final currentSelectedContext =
+                genreGlobalKeys[currentFocusedIndex].currentContext;
+            if (currentSelectedContext != null &&
+                currentSelectedContext.mounted) {
+              Scrollable.ensureVisible(
+                currentSelectedContext,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+                alignment: 1.0,
+              );
+            }
+          });
+        }
+      });
       return null;
     }, [isFocused, currentFocusedIndex, genres.length]);
 
@@ -68,6 +84,8 @@ class GenreSelector extends HookWidget {
               key: listViewKey,
               shrinkWrap: true,
               clipBehavior: Clip.hardEdge,
+              padding: const EdgeInsets.only(bottom: 50),
+              controller: scrollController,
               children: [
                 if (!isCollapsed.value) ...[
                   Text(
@@ -86,16 +104,12 @@ class GenreSelector extends HookWidget {
                     margin: const EdgeInsets.symmetric(vertical: 2),
                     decoration: BoxDecoration(
                       color: isCurrentlyFocused
-                          ? Colors.white.withOpacity(0.1)
-                          : selectedGenre?.id == genre.id
-                              ? kPrimaryColor.withOpacity(0.2)
-                              : Colors.transparent,
+                          ? kPrimaryColor.withOpacity(0.4)
+                          : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
-                      border: isCurrentlyFocused
-                          ? Border.all(color: Colors.white, width: 2)
-                          : null,
                     ),
                     child: ListTile(
+                      key: genreGlobalKeys[index],
                       horizontalTitleGap: 0,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16.0,

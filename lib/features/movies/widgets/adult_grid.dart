@@ -21,6 +21,8 @@ class AdultGrid extends HookConsumerWidget {
     final isGenreSelectorCollapsed = useState(false);
     return asyncGenres.when(
       data: (genres) {
+        final genreGlobalKeys = genres.map((genre) => GlobalKey()).toList();
+        final genreSidebarScrollController = useScrollController();
         return Row(
           children: [
             GenreSelector(
@@ -33,6 +35,8 @@ class AdultGrid extends HookConsumerWidget {
                 });
               },
               isCollapsed: isGenreSelectorCollapsed,
+              scrollController: genreSidebarScrollController,
+              genreGlobalKeys: genreGlobalKeys,
             ),
             Expanded(
               child: AlignedGridView.count(

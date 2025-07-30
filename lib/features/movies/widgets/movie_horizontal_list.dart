@@ -18,13 +18,20 @@ class MovieHorizontalList extends HookConsumerWidget {
 
     return genresWithMoviesAsync.when(
       data: (genresWithMovies) {
+        final globalKeys = useMemoized(
+          () => List.generate(genresWithMovies.length, (index) => GlobalKey()),
+        );
         return ListView.builder(
           itemCount: genresWithMovies.length,
           itemBuilder: (context, index) {
             final genre = genresWithMovies.keys.elementAt(index);
             final movies = genresWithMovies[genre]!;
 
-            return _MovieHorizontalListWidget(genre: genre, movies: movies);
+            return _MovieHorizontalListWidget(
+              genre: genre,
+              movies: movies,
+              globalKey: globalKeys[index],
+            );
           },
         );
       },
@@ -43,10 +50,12 @@ class _MovieHorizontalListWidget extends HookWidget {
     super.key,
     required this.genre,
     required this.movies,
+    required this.globalKey,
   });
 
   final Genre genre;
   final List<Movie> movies;
+  final GlobalKey globalKey;
 
   @override
   Widget build(BuildContext context) {
@@ -55,49 +64,58 @@ class _MovieHorizontalListWidget extends HookWidget {
     );
     return SizedBox(
       height: 475,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Genre title
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Text(
-              genre.name ?? 'Unknown Genre',
-              style: Theme.of(context).textTheme.titleLarge,
+      key: globalKey,
+      child: Focus(
+        skipTraversal: true,
+        onFocusChange: (value) {
+          if (value) {
+            Scrollable.ensureVisible(globalKey.currentContext!);
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Genre title
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Text(
+                genre.name ?? 'Unknown Genre',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
             ),
-          ),
 
-          // Horizontal movie list
-          Expanded(
-            // Fixed height for movie tiles
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 0.0),
-              itemCount: movies.length,
-              itemBuilder: (context, movieIndex) {
-                final AsyncValue<Movie> currentPopularMovieFromIndex =
-                    AsyncValue.data(movies[movieIndex]);
+            // Horizontal movie list
+            Expanded(
+              // Fixed height for movie tiles
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                itemCount: movies.length,
+                itemBuilder: (context, movieIndex) {
+                  final AsyncValue<Movie> currentPopularMovieFromIndex =
+                      AsyncValue.data(movies[movieIndex]);
 
-                return SizedBox(
-                  width: 185,
-                  child: ProviderScope(
-                    overrides: [
-                      currentPopularMovieProvider
-                          .overrideWithValue(currentPopularMovieFromIndex)
-                    ],
-                    child: MovieTile(
-                      autofocus: false,
-                      index: movieIndex,
-                      focusNode: focusNodes[movieIndex],
+                  return SizedBox(
+                    width: 185,
+                    child: ProviderScope(
+                      overrides: [
+                        currentPopularMovieProvider
+                            .overrideWithValue(currentPopularMovieFromIndex)
+                      ],
+                      child: MovieTile(
+                        autofocus: false,
+                        index: movieIndex,
+                        focusNode: focusNodes[movieIndex],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
 
-          const SizedBox(height: 24.0), // Spacing between genres
-        ],
+            const SizedBox(height: 24.0), // Spacing between genres
+          ],
+        ),
       ),
     );
   }

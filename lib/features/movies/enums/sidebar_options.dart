@@ -15,4 +15,5 @@ enum SidebarOptions {
   apiMovies,
   apiMoviesV3,
   settings,
+  reset,
 }

@@ -70,10 +70,6 @@ class MoviesGrid extends HookConsumerWidget {
                       _scrollToGenreItem(
                         genreGlobalKeys[currentGenreIndex.value],
                       );
-                      if (genreList.isNotEmpty) {
-                        ref.read(selectedMovieGenreProvider.notifier).state =
-                            genreList[currentGenreIndex.value];
-                      }
                     } else {
                       return true;
                     }
@@ -101,10 +97,6 @@ class MoviesGrid extends HookConsumerWidget {
                       _scrollToGenreItem(
                         genreGlobalKeys[currentGenreIndex.value],
                       );
-                      if (genreList.isNotEmpty) {
-                        ref.read(selectedMovieGenreProvider.notifier).state =
-                            genreList[currentGenreIndex.value];
-                      }
                     } else {
                       return true;
                     }
@@ -169,9 +161,6 @@ class MoviesGrid extends HookConsumerWidget {
                         currentMovieIndex.value + 1 < totalMovies) {
                       currentMovieIndex.value++;
                     } else {
-                      _scrollToGenreItem(
-                        genreGlobalKeys[currentGenreIndex.value],
-                      );
                       return false;
                     }
                   }
@@ -223,8 +212,20 @@ class MoviesGrid extends HookConsumerWidget {
         // Set up initial focus
         useEffect(() {
           genreSidebarFocus.requestFocus();
+          currentGenreIndex.value = 0;
+
           return null;
         }, []);
+
+        useEffect(() {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (genreList.isNotEmpty) {
+              ref.read(selectedMovieGenreProvider.notifier).state =
+                  genreList[currentGenreIndex.value];
+            }
+          });
+          return null;
+        }, [currentGenreIndex.value]);
 
         return Focus(
           onKeyEvent: (node, event) => handleKeyPress(event)
@@ -343,15 +344,15 @@ class MoviesGrid extends HookConsumerWidget {
   void _scrollToGenreItem(
     GlobalKey genreGlobalKey,
   ) {
-    final context = genreGlobalKey.currentContext;
-    if (context != null) {
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-        alignment: 0.5,
-      );
-    }
+    // final context = genreGlobalKey.currentContext;
+    // if (context != null) {
+    //   Scrollable.ensureVisible(
+    //     context,
+    //     duration: const Duration(milliseconds: 300),
+    //     curve: Curves.easeOut,
+    //     alignment: 0.5,
+    //   );
+    // }
   }
 }
 

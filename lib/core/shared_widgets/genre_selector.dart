@@ -28,35 +28,41 @@ class GenreSelector extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
+    const double kGenreTileHeight = 40.0;
+
+    final containerKey =
+        useMemoized(() => GlobalKey(debugLabel: "containerKey"));
     final listViewKey =
         useMemoized(() => GlobalKey(debugLabel: "categoryListViewKey"));
     final focusNodes = useMemoized(
       () => List.generate(genres.length, (index) => FocusNode()),
     );
 
-    // Set focus to current focused index when section becomes focused
     useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (isFocused && currentFocusedIndex < genres.length) {
-          Future.microtask(() {
-            final currentSelectedContext =
-                genreGlobalKeys[currentFocusedIndex].currentContext;
-            if (currentSelectedContext != null &&
-                currentSelectedContext.mounted) {
-              Scrollable.ensureVisible(
-                currentSelectedContext,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-                alignment: 1.0,
-              );
-            }
-          });
-        }
-      });
+      if (isFocused && currentFocusedIndex < genres.length) {
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          focusNodes[currentFocusedIndex].requestFocus();
+
+          await Future.delayed(const Duration(milliseconds: 100));
+
+          // Scroll manually
+          if (scrollController.hasClients) {
+            final targetOffset = currentFocusedIndex * kGenreTileHeight;
+            final maxScroll = scrollController.position.maxScrollExtent;
+
+            scrollController.animateTo(
+              targetOffset.clamp(0.0, maxScroll),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
+          }
+        });
+      }
       return null;
     }, [isFocused, currentFocusedIndex, genres.length]);
 
     return SizedBox(
+      key: containerKey,
       height: double.infinity,
       child: Padding(
         padding: const EdgeInsets.only(top: 10),
@@ -84,8 +90,9 @@ class GenreSelector extends HookWidget {
               key: listViewKey,
               shrinkWrap: true,
               clipBehavior: Clip.hardEdge,
-              padding: const EdgeInsets.only(bottom: 50),
+              padding: const EdgeInsets.only(bottom: kGenreTileHeight),
               controller: scrollController,
+              physics: const ClampingScrollPhysics(),
               children: [
                 if (!isCollapsed.value) ...[
                   Text(
@@ -101,6 +108,7 @@ class GenreSelector extends HookWidget {
                       isFocused && currentFocusedIndex == index;
 
                   return Container(
+                    height: kGenreTileHeight,
                     margin: const EdgeInsets.symmetric(vertical: 2),
                     decoration: BoxDecoration(
                       color: isCurrentlyFocused

@@ -28,6 +28,11 @@ import '../../widgets/dashboard_sidebar.dart';
 import '../../widgets/movies_v2_grid.dart';
 import '../../widgets/movies_v3_grid.dart';
 
+enum DashboardSection {
+  drawer,
+  contentViews,
+}
+
 class HomeView extends HookConsumerWidget {
   const HomeView({super.key});
 
@@ -38,6 +43,7 @@ class HomeView extends HookConsumerWidget {
     final isMounted = useIsMounted();
     final shouldReAskForUpdate = useState(false);
     final backCounter = useRef(0);
+    final dashboardSection = useState(DashboardSection.drawer);
 
     final isSidebarExpanded = ref.watch(dashboardSidebarStatusProvider) ==
         DashboardSidebarStatus.expanded;

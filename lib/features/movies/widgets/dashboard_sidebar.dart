@@ -32,8 +32,27 @@ class DashboardSideBar extends HookConsumerWidget {
     final shouldHide = ref.watch(dashboardSidebarStatusProvider) ==
         DashboardSidebarStatus.collapsed;
 
-    final topMostItemNode = useFocusNode();
-    final bottomMostItemNode = useFocusNode();
+    final focusNodeMap = {
+      for (var option in SidebarOptions.values) option: useFocusNode(),
+    };
+
+    final topMostItemNode = focusNodeMap[SidebarOptions.home]!;
+    final bottomMostItemNode = focusNodeMap[SidebarOptions.reset]!;
+
+    final scrollController = useScrollController();
+    final globalKeyMap = {
+      for (var option in SidebarOptions.values) option: GlobalKey(),
+    };
+
+    // Effect to focus the selected item when sidebar gains focus
+    useEffect(() {
+      final selectedFocusNode = focusNodeMap[sidebarState.sidebarOptions];
+      if (selectedFocusNode != null) {
+        _getFocusAndScrollToSelectedSidebarOption(
+            selectedFocusNode, sidebarState, scrollController, globalKeyMap);
+      }
+      return null;
+    }, [sidebarState.sidebarOptions]);
 
     return SizedBox(
       height: double.infinity,
@@ -50,6 +69,13 @@ class DashboardSideBar extends HookConsumerWidget {
               if (isChildrenFocused) {
                 ref.read(dashboardSidebarStatusProvider.notifier).state =
                     DashboardSidebarStatus.expanded;
+                // Focus the selected item when sidebar gains focus
+                final selectedFocusNode =
+                    focusNodeMap[sidebarState.sidebarOptions];
+                if (selectedFocusNode != null) {
+                  _getFocusAndScrollToSelectedSidebarOption(selectedFocusNode,
+                      sidebarState, scrollController, globalKeyMap);
+                }
               } else {
                 ref.read(dashboardSidebarStatusProvider.notifier).state =
                     DashboardSidebarStatus.collapsed;
@@ -74,6 +100,7 @@ class DashboardSideBar extends HookConsumerWidget {
             child: ListView(
               key: listViewKey,
               shrinkWrap: true,
+              controller: scrollController,
               children: <Widget>[
                 DrawerItem(
                   title: "",
@@ -98,6 +125,7 @@ class DashboardSideBar extends HookConsumerWidget {
                   iconData: Icons.home_outlined,
                   selectedIconData: Icons.home,
                   focusNode: topMostItemNode,
+                  key: globalKeyMap[SidebarOptions.home]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.home,
                   onlyIcon: shouldHide,
@@ -110,6 +138,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   // title: AppLocalizations.of(context)!.helloWorld,
                   iconData: Icons.movie_outlined,
                   selectedIconData: Icons.movie,
+                  focusNode: focusNodeMap[SidebarOptions.movieV2]!,
+                  key: globalKeyMap[SidebarOptions.movieV2]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.movieV2,
                   onlyIcon: shouldHide,
@@ -122,6 +152,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.tvShows,
                   iconData: Icons.tv_outlined,
                   selectedIconData: Icons.tv,
+                  focusNode: focusNodeMap[SidebarOptions.tvShows]!,
+                  key: globalKeyMap[SidebarOptions.tvShows]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.tvShows,
                   onlyIcon: shouldHide,
@@ -134,6 +166,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: "${context.localisations.tvShows} V3",
                   iconData: Icons.tv_outlined,
                   selectedIconData: Icons.tv,
+                  focusNode: focusNodeMap[SidebarOptions.tvShowsV3]!,
+                  key: globalKeyMap[SidebarOptions.tvShowsV3]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.tvShowsV3,
                   onlyIcon: shouldHide,
@@ -146,6 +180,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.tvGuide,
                   iconData: Icons.live_tv_outlined,
                   selectedIconData: Icons.live_tv,
+                  focusNode: focusNodeMap[SidebarOptions.tvGuide]!,
+                  key: globalKeyMap[SidebarOptions.tvGuide]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.tvGuide,
                   onlyIcon: shouldHide,
@@ -162,6 +198,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: "${context.localisations.tvGuide} (L)",
                   iconData: Icons.live_tv_outlined,
                   selectedIconData: Icons.live_tv,
+                  focusNode: focusNodeMap[SidebarOptions.tvGuideLegacy]!,
+                  key: globalKeyMap[SidebarOptions.tvGuideLegacy]!,
                   isSelected: sidebarState.sidebarOptions ==
                       SidebarOptions.tvGuideLegacy,
                   onlyIcon: shouldHide,
@@ -175,6 +213,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.adult,
                   iconData: Icons.eighteen_up_rating_outlined,
                   selectedIconData: Icons.eighteen_up_rating,
+                  focusNode: focusNodeMap[SidebarOptions.adult]!,
+                  key: globalKeyMap[SidebarOptions.adult]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.adult,
                   onlyIcon: shouldHide,
@@ -223,6 +263,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.search,
                   iconData: Icons.search_outlined,
                   selectedIconData: Icons.search,
+                  focusNode: focusNodeMap[SidebarOptions.search]!,
+                  key: globalKeyMap[SidebarOptions.search]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.search,
                   onlyIcon: shouldHide,
@@ -235,6 +277,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.liveChannelSearch,
                   iconData: Icons.search_outlined,
                   selectedIconData: Icons.search,
+                  focusNode: focusNodeMap[SidebarOptions.liveChannelsSearch]!,
+                  key: globalKeyMap[SidebarOptions.liveChannelsSearch]!,
                   isSelected: sidebarState.sidebarOptions ==
                       SidebarOptions.liveChannelsSearch,
                   onlyIcon: shouldHide,
@@ -247,6 +291,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.sports,
                   iconData: Icons.sports_basketball_outlined,
                   selectedIconData: Icons.sports_basketball,
+                  focusNode: focusNodeMap[SidebarOptions.sports]!,
+                  key: globalKeyMap[SidebarOptions.sports]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.sports,
                   onlyIcon: shouldHide,
@@ -264,6 +310,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.favorites,
                   iconData: Icons.favorite_border,
                   selectedIconData: Icons.favorite,
+                  focusNode: focusNodeMap[SidebarOptions.favorites]!,
+                  key: globalKeyMap[SidebarOptions.favorites]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.favorites,
                   onlyIcon: shouldHide,
@@ -273,6 +321,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.watchlist,
                   iconData: Icons.list_outlined,
                   selectedIconData: Icons.list,
+                  focusNode: focusNodeMap[SidebarOptions.watchlist]!,
+                  key: globalKeyMap[SidebarOptions.watchlist]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.watchlist,
                   onlyIcon: shouldHide,
@@ -282,6 +332,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: 'API V2 ${context.localisations.movies}',
                   iconData: Icons.movie_outlined,
                   selectedIconData: Icons.movie,
+                  focusNode: focusNodeMap[SidebarOptions.apiMovies]!,
+                  key: globalKeyMap[SidebarOptions.apiMovies]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.apiMovies,
                   onlyIcon: shouldHide,
@@ -294,6 +346,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: 'API V3 ${context.localisations.movies}',
                   iconData: Icons.movie_outlined,
                   selectedIconData: Icons.movie,
+                  focusNode: focusNodeMap[SidebarOptions.apiMoviesV3]!,
+                  key: globalKeyMap[SidebarOptions.apiMoviesV3]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.apiMoviesV3,
                   onlyIcon: shouldHide,
@@ -306,6 +360,8 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.settings,
                   iconData: Icons.settings_outlined,
                   selectedIconData: Icons.settings,
+                  focusNode: focusNodeMap[SidebarOptions.settings]!,
+                  key: globalKeyMap[SidebarOptions.settings]!,
                   isSelected:
                       sidebarState.sidebarOptions == SidebarOptions.settings,
                   onlyIcon: shouldHide,
@@ -318,6 +374,7 @@ class DashboardSideBar extends HookConsumerWidget {
                   title: context.localisations.reset,
                   iconData: Icons.refresh,
                   selectedIconData: Icons.refresh,
+                  key: globalKeyMap[SidebarOptions.reset]!,
                   isSelected: false,
                   onlyIcon: shouldHide,
                   focusNode: bottomMostItemNode,
@@ -381,6 +438,40 @@ class DashboardSideBar extends HookConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _getFocusAndScrollToSelectedSidebarOption(
+      FocusNode selectedFocusNode,
+      SidebarState sidebarState,
+      ScrollController scrollController,
+      Map<SidebarOptions, GlobalKey<State<StatefulWidget>>> globalKeyMap) {
+    Future.microtask(() {
+      selectedFocusNode.requestFocus();
+      if (sidebarState.sidebarOptions == SidebarOptions.home) {
+        scrollController.animateTo(
+          scrollController.position.minScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else if (sidebarState.sidebarOptions == SidebarOptions.reset) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        final selectedContext =
+            globalKeyMap[sidebarState.sidebarOptions]!.currentContext;
+        if (selectedContext != null && selectedContext.mounted) {
+          Scrollable.ensureVisible(
+            selectedContext,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            alignment: 0.5,
+          );
+        }
+      }
+    });
   }
 }
 

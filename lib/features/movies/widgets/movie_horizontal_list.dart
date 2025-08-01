@@ -202,25 +202,14 @@ class MovieHorizontalList extends HookConsumerWidget {
     Future.microtask(() {
       focusNode.requestFocus();
 
-      // Scroll the main list to make the genre section visible
-      if (globalKey.currentContext != null && mainScrollController.hasClients) {
-        final RenderBox? renderBox =
-            globalKey.currentContext!.findRenderObject() as RenderBox?;
-        if (renderBox != null) {
-          final position = renderBox.localToGlobal(Offset.zero);
-          final mainScrollPosition = mainScrollController.position;
-
-          // Calculate the target scroll offset to show the genre title
-          final targetOffset = mainScrollController.offset +
-              position.dy -
-              20; // 20px padding from top
-
-          mainScrollController.animateTo(
-            targetOffset.clamp(0.0, mainScrollPosition.maxScrollExtent),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
+      // Use Scrollable.ensureVisible with proper alignment to show genre title
+      if (globalKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          globalKey.currentContext!,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+          alignment: 0.0, // Align to top to ensure genre title is visible
+        );
       }
 
       // Reset horizontal scroll position to beginning of the genre
@@ -274,56 +263,69 @@ class _MovieHorizontalListWidget extends HookWidget {
       return null;
     }, [isFocused, currentMovieIndex]);
 
-    return SizedBox(
-      height: 475,
+    return Container(
       key: globalKey,
+      margin: const EdgeInsets.only(top: 16.0), // Reduced top margin
       child: Focus(
         focusNode: focusNode,
         skipTraversal: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Genre title - always visible
-            Padding(
-              padding: const EdgeInsets.all(10.0),
+            // Genre title - always visible with better styling
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0, vertical: 8.0), // Reduced vertical padding
+              decoration: BoxDecoration(
+                color: isFocused
+                    ? Theme.of(context).primaryColor.withOpacity(0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8.0),
+              ),
               child: Text(
                 genre.name ?? 'Unknown Genre',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: isFocused ? Theme.of(context).primaryColor : null,
-                      fontWeight: isFocused ? FontWeight.bold : null,
+                      color: Colors.white, // Always white for better visibility
+                      fontWeight: isFocused ? FontWeight.bold : FontWeight.w600,
                     ),
               ),
             ),
 
             // Horizontal movie list
-            Expanded(
+            SizedBox(
+              height: 420, // Reduced height to prevent overflow
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 controller: scrollController,
                 physics:
                     const ClampingScrollPhysics(), // Remove bouncing physics
-                padding: const EdgeInsets.symmetric(horizontal: 0.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8.0, vertical: 8.0), // Reduced vertical padding
                 itemCount: movies.length,
                 itemBuilder: (context, movieIndex) {
                   final AsyncValue<Movie> currentPopularMovieFromIndex =
                       AsyncValue.data(movies[movieIndex]);
 
-                  return SizedBox(
-                    width: 185,
-                    child: ProviderScope(
-                      overrides: [
-                        currentPopularMovieProvider
-                            .overrideWithValue(currentPopularMovieFromIndex)
-                      ],
-                      child: MovieTile(
-                        autofocus: isFocused && currentMovieIndex == movieIndex,
-                        index: movieIndex,
-                        focusNode: movieFocusNodes[movieIndex],
-                        onFocusChanged: (hasFocus) {
-                          if (hasFocus) {
-                            onMovieIndexChanged(movieIndex);
-                          }
-                        },
+                  return Container(
+                    margin: const EdgeInsets.only(right: 8.0),
+                    child: SizedBox(
+                      width: 185,
+                      child: ProviderScope(
+                        overrides: [
+                          currentPopularMovieProvider
+                              .overrideWithValue(currentPopularMovieFromIndex)
+                        ],
+                        child: MovieTile(
+                          autofocus:
+                              isFocused && currentMovieIndex == movieIndex,
+                          index: movieIndex,
+                          focusNode: movieFocusNodes[movieIndex],
+                          onFocusChanged: (hasFocus) {
+                            if (hasFocus) {
+                              onMovieIndexChanged(movieIndex);
+                            }
+                          },
+                        ),
                       ),
                     ),
                   );
@@ -331,7 +333,7 @@ class _MovieHorizontalListWidget extends HookWidget {
               ),
             ),
 
-            const SizedBox(height: 24.0), // Spacing between genres
+            const SizedBox(height: 12.0), // Reduced spacing between genres
           ],
         ),
       ),

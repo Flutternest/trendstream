@@ -18,12 +18,14 @@ class MovieTile extends HookConsumerWidget {
     required this.index,
     required this.focusNode,
     this.isFocused = false,
+    this.onFocusChanged,
   }) : super(key: key);
 
   final bool autofocus;
   final int index;
   final FocusNode focusNode;
   final bool isFocused;
+  final ValueChanged<bool>? onFocusChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,6 +33,7 @@ class MovieTile extends HookConsumerWidget {
       autofocus: autofocus,
       focusNode: focusNode,
       isFocused: isFocused,
+      onFocusChanged: onFocusChanged,
     );
 
     //   final AsyncValue<Movie> movieAsync = ref.watch(currentPopularMovieProvider);
@@ -149,11 +152,13 @@ class RawAsyncMovieTile extends ConsumerWidget {
     required this.autofocus,
     required this.focusNode,
     required this.isFocused,
+    this.onFocusChanged,
   });
 
   final bool autofocus;
   final FocusNode focusNode;
   final bool isFocused;
+  final ValueChanged<bool>? onFocusChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -171,6 +176,7 @@ class RawAsyncMovieTile extends ConsumerWidget {
         AppRouter.navigateToPage(Routes.detailsView,
             arguments: movieAsync.asData!.value.id);
       },
+      onFocusChange: onFocusChanged,
       child: Builder(builder: (context) {
         final bool hasFocus = Focus.of(context).hasPrimaryFocus || isFocused;
         return Container(

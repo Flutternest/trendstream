@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/shared_widgets/app_loader.dart';
@@ -18,21 +19,145 @@ class MovieHorizontalList extends HookConsumerWidget {
 
     return genresWithMoviesAsync.when(
       data: (genresWithMovies) {
+        // Focus management state
+        final currentGenreIndex = useState(0);
+        final currentMovieIndex = useState(0);
+
+        // Create focus nodes for each genre section
+        final genreFocusNodes = useMemoized(
+          () => List.generate(genresWithMovies.length, (index) => FocusNode()),
+        );
+
+        // Create scroll controllers for each genre's horizontal list
+        final genreScrollControllers = useMemoized(
+          () => List.generate(
+              genresWithMovies.length, (index) => ScrollController()),
+        );
+
+        // Global keys for each genre section
         final globalKeys = useMemoized(
           () => List.generate(genresWithMovies.length, (index) => GlobalKey()),
         );
-        return ListView.builder(
-          itemCount: genresWithMovies.length,
-          itemBuilder: (context, index) {
-            final genre = genresWithMovies.keys.elementAt(index);
-            final movies = genresWithMovies[genre]!;
 
-            return _MovieHorizontalListWidget(
-              genre: genre,
-              movies: movies,
-              globalKey: globalKeys[index],
-            );
+        // Main vertical scroll controller for the entire list
+        final mainScrollController = useScrollController();
+
+        // Handle keyboard navigation
+        final handleKeyPress = useCallback(
+          (KeyEvent event) {
+            if (event is KeyDownEvent) {
+              final genres = genresWithMovies.keys.toList();
+              final currentGenre = genres[currentGenreIndex.value];
+              final currentMovies = genresWithMovies[currentGenre]!;
+
+              switch (event.logicalKey) {
+                case LogicalKeyboardKey.arrowLeft:
+                  if (currentMovieIndex.value > 0) {
+                    currentMovieIndex.value--;
+                    _scrollToMovieInGenre(
+                      genreScrollControllers[currentGenreIndex.value],
+                      currentMovieIndex.value,
+                      currentMovies.length,
+                    );
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.arrowRight:
+                  if (currentMovieIndex.value < currentMovies.length - 1) {
+                    currentMovieIndex.value++;
+                    _scrollToMovieInGenre(
+                      genreScrollControllers[currentGenreIndex.value],
+                      currentMovieIndex.value,
+                      currentMovies.length,
+                    );
+                  } else {
+                    // Move to next genre if at the end of current genre
+                    if (currentGenreIndex.value < genres.length - 1) {
+                      currentGenreIndex.value++;
+                      currentMovieIndex.value = 0;
+                      _focusAndScrollToGenre(
+                        genreFocusNodes[currentGenreIndex.value],
+                        globalKeys[currentGenreIndex.value],
+                        genreScrollControllers[currentGenreIndex.value],
+                        mainScrollController,
+                      );
+                    }
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.arrowUp:
+                  if (currentGenreIndex.value > 0) {
+                    currentGenreIndex.value--;
+                    currentMovieIndex.value = 0;
+                    _focusAndScrollToGenre(
+                      genreFocusNodes[currentGenreIndex.value],
+                      globalKeys[currentGenreIndex.value],
+                      genreScrollControllers[currentGenreIndex.value],
+                      mainScrollController,
+                    );
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.arrowDown:
+                  if (currentGenreIndex.value < genres.length - 1) {
+                    currentGenreIndex.value++;
+                    currentMovieIndex.value = 0;
+                    _focusAndScrollToGenre(
+                      genreFocusNodes[currentGenreIndex.value],
+                      globalKeys[currentGenreIndex.value],
+                      genreScrollControllers[currentGenreIndex.value],
+                      mainScrollController,
+                    );
+                  }
+                  return true;
+
+                case LogicalKeyboardKey.select:
+                case LogicalKeyboardKey.enter:
+                  // Handle movie selection (will be handled by MovieTile)
+                  return false;
+              }
+            }
+            return false;
           },
+          [genresWithMovies, currentGenreIndex.value, currentMovieIndex.value],
+        );
+
+        // Set initial focus
+        useEffect(() {
+          if (genresWithMovies.isNotEmpty) {
+            Future.microtask(() {
+              genreFocusNodes[0].requestFocus();
+            });
+          }
+          return null;
+        }, []);
+
+        return Focus(
+          onKeyEvent: (node, event) => handleKeyPress(event)
+              ? KeyEventResult.handled
+              : KeyEventResult.ignored,
+          child: ListView.builder(
+            controller: mainScrollController,
+            physics: const ClampingScrollPhysics(),
+            itemCount: genresWithMovies.length,
+            itemBuilder: (context, index) {
+              final genre = genresWithMovies.keys.elementAt(index);
+              final movies = genresWithMovies[genre]!;
+
+              return _MovieHorizontalListWidget(
+                genre: genre,
+                movies: movies,
+                globalKey: globalKeys[index],
+                focusNode: genreFocusNodes[index],
+                scrollController: genreScrollControllers[index],
+                isFocused: currentGenreIndex.value == index,
+                currentMovieIndex: currentMovieIndex.value,
+                onMovieIndexChanged: (newIndex) {
+                  currentMovieIndex.value = newIndex;
+                },
+              );
+            },
+          ),
         );
       },
       error: (error, stackTrace) => ErrorView(
@@ -43,6 +168,71 @@ class MovieHorizontalList extends HookConsumerWidget {
       loading: () => const AppLoader(),
     );
   }
+
+  void _scrollToMovieInGenre(
+    ScrollController scrollController,
+    int movieIndex,
+    int totalMovies,
+  ) {
+    if (!scrollController.hasClients) return;
+
+    // Calculate the position to scroll to
+    const movieWidth = 185.0; // Width of each movie tile
+    final targetOffset = movieIndex * movieWidth;
+
+    // Calculate the maximum scroll extent
+    final maxScrollExtent = scrollController.position.maxScrollExtent;
+
+    // Ensure we don't scroll beyond the available content
+    final clampedOffset = targetOffset.clamp(0.0, maxScrollExtent);
+
+    scrollController.animateTo(
+      clampedOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
+  void _focusAndScrollToGenre(
+    FocusNode focusNode,
+    GlobalKey globalKey,
+    ScrollController scrollController,
+    ScrollController mainScrollController,
+  ) {
+    Future.microtask(() {
+      focusNode.requestFocus();
+
+      // Scroll the main list to make the genre section visible
+      if (globalKey.currentContext != null && mainScrollController.hasClients) {
+        final RenderBox? renderBox =
+            globalKey.currentContext!.findRenderObject() as RenderBox?;
+        if (renderBox != null) {
+          final position = renderBox.localToGlobal(Offset.zero);
+          final mainScrollPosition = mainScrollController.position;
+
+          // Calculate the target scroll offset to show the genre title
+          final targetOffset = mainScrollController.offset +
+              position.dy -
+              20; // 20px padding from top
+
+          mainScrollController.animateTo(
+            targetOffset.clamp(0.0, mainScrollPosition.maxScrollExtent),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      }
+
+      // Reset horizontal scroll position to beginning of the genre
+      if (scrollController.hasClients) {
+        scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 }
 
 class _MovieHorizontalListWidget extends HookWidget {
@@ -51,44 +241,67 @@ class _MovieHorizontalListWidget extends HookWidget {
     required this.genre,
     required this.movies,
     required this.globalKey,
+    required this.focusNode,
+    required this.scrollController,
+    required this.isFocused,
+    required this.currentMovieIndex,
+    required this.onMovieIndexChanged,
   });
 
   final Genre genre;
   final List<Movie> movies;
   final GlobalKey globalKey;
+  final FocusNode focusNode;
+  final ScrollController scrollController;
+  final bool isFocused;
+  final int currentMovieIndex;
+  final ValueChanged<int> onMovieIndexChanged;
 
   @override
   Widget build(BuildContext context) {
-    final focusNodes = useMemoized(
+    // Create focus nodes for each movie in this genre
+    final movieFocusNodes = useMemoized(
       () => List.generate(movies.length, (index) => FocusNode()),
     );
+
+    // Effect to focus the current movie when this genre gains focus
+    useEffect(() {
+      if (isFocused && currentMovieIndex < movies.length) {
+        Future.microtask(() {
+          movieFocusNodes[currentMovieIndex].requestFocus();
+        });
+      }
+      return null;
+    }, [isFocused, currentMovieIndex]);
+
     return SizedBox(
       height: 475,
       key: globalKey,
       child: Focus(
+        focusNode: focusNode,
         skipTraversal: true,
-        onFocusChange: (value) {
-          if (value) {
-            Scrollable.ensureVisible(globalKey.currentContext!);
-          }
-        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Genre title
+            // Genre title - always visible
             Padding(
               padding: const EdgeInsets.all(10.0),
               child: Text(
                 genre.name ?? 'Unknown Genre',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: isFocused ? Theme.of(context).primaryColor : null,
+                      fontWeight: isFocused ? FontWeight.bold : null,
+                    ),
               ),
             ),
 
             // Horizontal movie list
             Expanded(
-              // Fixed height for movie tiles
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
+                controller: scrollController,
+                physics:
+                    const ClampingScrollPhysics(), // Remove bouncing physics
                 padding: const EdgeInsets.symmetric(horizontal: 0.0),
                 itemCount: movies.length,
                 itemBuilder: (context, movieIndex) {
@@ -103,9 +316,14 @@ class _MovieHorizontalListWidget extends HookWidget {
                             .overrideWithValue(currentPopularMovieFromIndex)
                       ],
                       child: MovieTile(
-                        autofocus: false,
+                        autofocus: isFocused && currentMovieIndex == movieIndex,
                         index: movieIndex,
-                        focusNode: focusNodes[movieIndex],
+                        focusNode: movieFocusNodes[movieIndex],
+                        onFocusChanged: (hasFocus) {
+                          if (hasFocus) {
+                            onMovieIndexChanged(movieIndex);
+                          }
+                        },
                       ),
                     ),
                   );

@@ -43,7 +43,6 @@ class HomeView extends HookConsumerWidget {
     final isMounted = useIsMounted();
     final shouldReAskForUpdate = useState(false);
     final backCounter = useRef(0);
-    final dashboardSection = useState(DashboardSection.drawer);
 
     final isSidebarExpanded = ref.watch(dashboardSidebarStatusProvider) ==
         DashboardSidebarStatus.expanded;

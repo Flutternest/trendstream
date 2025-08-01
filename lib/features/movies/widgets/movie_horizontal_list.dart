@@ -45,7 +45,7 @@ class MovieHorizontalList extends HookConsumerWidget {
         // Handle keyboard navigation
         final handleKeyPress = useCallback(
           (KeyEvent event) {
-            if (event is KeyDownEvent) {
+            if (event is KeyDownEvent || event is KeyRepeatEvent) {
               final genres = genresWithMovies.keys.toList();
               final currentGenre = genres[currentGenreIndex.value];
               final currentMovies = genresWithMovies[currentGenre]!;
@@ -116,7 +116,7 @@ class MovieHorizontalList extends HookConsumerWidget {
                   // Handle movie selection (will be handled by MovieTile)
                   return false;
               }
-            }
+            } 
             return false;
           },
           [genresWithMovies, currentGenreIndex.value, currentMovieIndex.value],

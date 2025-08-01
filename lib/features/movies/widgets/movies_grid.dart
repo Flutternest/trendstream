@@ -5,6 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/genre_selector.dart';
+import 'package:latest_movies/core/utilities/app_logger.dart';
 import 'package:latest_movies/features/movies/controllers/genre_list_provider.dart';
 import 'package:latest_movies/features/movies/controllers/popular_movies_count_provider.dart';
 
@@ -60,7 +61,8 @@ class MoviesGrid extends HookConsumerWidget {
         // Handle keyboard navigation
         final handleKeyPress = useCallback(
           (KeyEvent event) {
-            if (event is KeyDownEvent) {
+            AppLogger(identifier: 'MoviesGrid').d('onKeyEvent: $event');
+            if (event is KeyDownEvent || event is KeyRepeatEvent) {
               switch (event.logicalKey) {
                 case LogicalKeyboardKey.arrowUp:
                   if (selectedSection.value == Sections.genre) {

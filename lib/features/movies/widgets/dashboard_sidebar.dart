@@ -6,6 +6,7 @@ import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/services/shared_preferences_service.dart';
 import 'package:latest_movies/core/shared_providers/device_details_provider.dart';
+import 'package:latest_movies/core/utilities/app_logger.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/movies/controllers/side_bar_controller.dart';
 import 'package:latest_movies/features/movies/widgets/enter_passcode_dialog.dart';
@@ -81,19 +82,21 @@ class DashboardSideBar extends HookConsumerWidget {
                     DashboardSidebarStatus.collapsed;
               }
             },
-            onKey: (node, RawKeyEvent event) {
-              if (event.runtimeType == RawKeyDownEvent &&
-                  (event.isKeyPressed(LogicalKeyboardKey.arrowUp) ||
-                      event.isKeyPressed(LogicalKeyboardKey.arrowDown))) {
-                if (event.isKeyPressed(LogicalKeyboardKey.arrowDown) &&
-                    bottomMostItemNode.hasPrimaryFocus) {
-                  return KeyEventResult.handled;
+            onKeyEvent: (node, KeyEvent event) {
+              AppLogger(identifier: 'DashboardSideBar').d('onKeyEvent: $event');
+              if (event is KeyDownEvent || event is KeyRepeatEvent) {
+                switch (event.logicalKey) {
+                  case LogicalKeyboardKey.arrowUp:
+                    if (topMostItemNode.hasPrimaryFocus) {
+                      return KeyEventResult.handled;
+                    }
+                    return KeyEventResult.ignored;
+                  case LogicalKeyboardKey.arrowDown:
+                    if (bottomMostItemNode.hasPrimaryFocus) {
+                      return KeyEventResult.handled;
+                    }
+                    return KeyEventResult.ignored;
                 }
-                if (event.isKeyPressed(LogicalKeyboardKey.arrowUp) &&
-                    topMostItemNode.hasPrimaryFocus) {
-                  return KeyEventResult.handled;
-                }
-                return KeyEventResult.ignored;
               }
               return KeyEventResult.ignored;
             },

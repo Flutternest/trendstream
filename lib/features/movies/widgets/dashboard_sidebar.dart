@@ -332,7 +332,7 @@ class DashboardSideBar extends HookConsumerWidget {
                   onTap: () {},
                 ),
                 DrawerItem(
-                  title: 'API V2 ${context.localisations.movies}',
+                  title: 'TMDB ${context.localisations.movies}',
                   iconData: Icons.movie_outlined,
                   selectedIconData: Icons.movie,
                   focusNode: focusNodeMap[SidebarOptions.apiMovies]!,

@@ -37,7 +37,7 @@ class _SportsPageState extends ConsumerState<SportsPage> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Container(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(2.0),
               width: double.infinity,
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
@@ -50,7 +50,6 @@ class _SportsPageState extends ConsumerState<SportsPage> {
                 label: Text(context.localisations.back),
               ),
             ),
-            verticalSpaceRegular,
             const CurrentSportsDetails(),
             verticalSpaceMedium,
             const SizedBox(

@@ -5,7 +5,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/paths.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
-import 'package:latest_movies/core/models/category_model.dart';
 import 'package:latest_movies/core/shared_widgets/button.dart';
 import 'package:latest_movies/core/shared_widgets/default_app_padding.dart';
 import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
@@ -25,7 +24,6 @@ import '../../controllers/side_bar_controller.dart';
 import '../../controllers/update_dowload_providers/update_download_manager_provider.dart';
 import '../../widgets/adult_grid.dart';
 import '../../widgets/dashboard_sidebar.dart';
-import '../../widgets/movies_v2_grid.dart';
 import '../../widgets/movies_v3_grid.dart';
 
 enum DashboardSection {
@@ -154,7 +152,7 @@ class HomeView extends HookConsumerWidget {
                     case SidebarOptions.sports:
                       return const SizedBox.shrink();
                     case SidebarOptions.apiMovies:
-                      return const MoviesV2Grid();
+                      return const MoviesGrid(useTMDBAPI: true);
                     case SidebarOptions.apiMoviesV3:
                       return const MoviesV3Grid();
                     case SidebarOptions.settings:

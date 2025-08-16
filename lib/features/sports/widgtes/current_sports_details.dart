@@ -21,9 +21,16 @@ class CurrentSportsDetails extends ConsumerWidget {
 
     return Row(
       children: [
-        Image.network(
-          focusedEvent.poster!,
-          height: 100,
+        Container(
+          height: 150,
+          padding: const EdgeInsets.all(2),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Image.network(
+              focusedEvent.poster!,
+              fit: BoxFit.cover,
+            ),
+          ),
         ),
         horizontalSpaceRegular,
         Expanded(
@@ -52,7 +59,7 @@ class CurrentSportsDetails extends ConsumerWidget {
         ),
         const Spacer(),
         const SizedBox(
-          height: 100,
+          height: 150,
           child: AspectRatio(
             aspectRatio: 16 / 9,
             child: MiniPlayerWidget(

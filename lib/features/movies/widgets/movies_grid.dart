@@ -3,18 +3,49 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/genre_selector.dart';
 import 'package:latest_movies/core/utilities/app_logger.dart';
 import 'package:latest_movies/features/movies/controllers/genre_list_provider.dart';
 import 'package:latest_movies/features/movies/controllers/popular_movies_count_provider.dart';
 
 import '../../../core/shared_widgets/app_loader.dart';
+import '../../../core/shared_widgets/error_view.dart';
 import '../../../core/utilities/responsive.dart';
 import '../controllers/current_popular_movies_provider.dart';
 import '../controllers/popular_paginated_movies_provider.dart';
+import '../models/movie/genre.dart';
 import '../models/movie/movie.dart';
+import '../repositories/movies_repository.dart';
 import 'movie_item.dart';
+
+// TMDB API providers
+final tmdbMoviesProvider = FutureProvider<List<Movie>>((ref) async {
+  final repository = ref.watch(moviesRepositoryProvider);
+  final response =
+      await repository.getPopularMovies(page: 1, forceRefresh: false);
+  return response.results;
+});
+
+final tmdbMoviesByGenreProvider =
+    FutureProvider.family<List<Movie>, int>((ref, genreId) async {
+  final repository = ref.watch(moviesRepositoryProvider);
+  if (genreId == 0) {
+    // Return all movies for "All" genre
+    final response =
+        await repository.getPopularMovies(page: 1, forceRefresh: false);
+    return response.results;
+  }
+
+  // Fetch movies by specific genre
+  final response = await repository.getPopularMovies(
+      page: 1, forceRefresh: false, genre: Genre(id: genreId, name: ''));
+  return response.results;
+});
+
+final tmdbGenresProvider = FutureProvider((ref) async {
+  final repository = ref.watch(moviesRepositoryProvider);
+  return await repository.fetchGenres();
+});
 
 enum Sections {
   genre,
@@ -22,14 +53,29 @@ enum Sections {
 }
 
 class MoviesGrid extends HookConsumerWidget {
-  const MoviesGrid({super.key});
+  const MoviesGrid({
+    super.key,
+    this.useTMDBAPI = false,
+  });
+
+  final bool useTMDBAPI;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedSection = useState(Sections.genre);
-    final popularMoviesCount = ref.watch(popularMoviesCountProvider);
-    final asyncGenres = ref.watch(genreListProvider);
     final selectedGenre = ref.watch(selectedMovieGenreProvider);
+
+    // Use different providers based on the flag
+    final popularMoviesCount = useTMDBAPI
+        ? ref
+            .watch(tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0))
+            .whenData((movies) => movies.length)
+        : ref.watch(popularMoviesCountProvider);
+
+    final asyncGenres = useTMDBAPI
+        ? ref.watch(tmdbGenresProvider)
+        : ref.watch(genreListProvider);
+
     final isGenreSelectorCollapsed = useState(false);
 
     // Focus management state
@@ -251,8 +297,13 @@ class MoviesGrid extends HookConsumerWidget {
                     }
 
                     Future.microtask(() {
-                      ref.invalidate(popularMoviesCountProvider);
-                      ref.invalidate(paginatedPopularMoviesProvider(0));
+                      if (useTMDBAPI) {
+                        ref.invalidate(
+                            tmdbMoviesByGenreProvider(genre.id ?? 0));
+                      } else {
+                        ref.invalidate(popularMoviesCountProvider);
+                        ref.invalidate(paginatedPopularMoviesProvider(0));
+                      }
                     });
                   },
                   isCollapsed: isGenreSelectorCollapsed,
@@ -272,14 +323,21 @@ class MoviesGrid extends HookConsumerWidget {
                         currentFocusedIndex: currentMovieIndex.value,
                         isFocused: selectedSection.value == Sections.movies,
                         scrollController: moviesScrollController,
+                        useTMDBAPI: useTMDBAPI,
+                        selectedGenre: selectedGenre,
                       ),
                     );
                   },
                   error: (e) => ErrorView(
                     onRetry: () {
                       Future.microtask(() {
-                        ref.invalidate(popularMoviesCountProvider);
-                        ref.invalidate(paginatedPopularMoviesProvider(0));
+                        if (useTMDBAPI) {
+                          ref.invalidate(tmdbMoviesByGenreProvider(
+                              selectedGenre?.id ?? 0));
+                        } else {
+                          ref.invalidate(popularMoviesCountProvider);
+                          ref.invalidate(paginatedPopularMoviesProvider(0));
+                        }
                       });
                     },
                   ),
@@ -293,7 +351,11 @@ class MoviesGrid extends HookConsumerWidget {
       error: (e, _) => ErrorView(
         onRetry: () {
           Future.microtask(() {
-            ref.invalidate(genreListProvider);
+            if (useTMDBAPI) {
+              ref.invalidate(tmdbGenresProvider);
+            } else {
+              ref.invalidate(genreListProvider);
+            }
           });
         },
       ),
@@ -365,12 +427,16 @@ class _MoviesGridWidget extends HookConsumerWidget {
     required this.currentFocusedIndex,
     required this.isFocused,
     required this.scrollController,
+    required this.useTMDBAPI,
+    required this.selectedGenre,
   });
 
   final int totalItems;
   final int currentFocusedIndex;
   final bool isFocused;
   final ScrollController scrollController;
+  final bool useTMDBAPI;
+  final Genre? selectedGenre;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -417,22 +483,49 @@ class _MoviesGridWidget extends HookConsumerWidget {
       crossAxisSpacing: 10.0,
       cacheExtent: 100,
       itemBuilder: (BuildContext context, int index) {
-        final AsyncValue<Movie> currentPopularMovieFromIndex = ref
-            .watch(paginatedPopularMoviesProvider(index ~/ 20))
-            .whenData((pageData) => pageData.results[index % 20]);
+        if (useTMDBAPI) {
+          final moviesAsync = ref.watch(tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
+          return moviesAsync.when(
+            data: (movies) {
+              if (index >= movies.length) {
+                return const SizedBox.shrink(); // Hide if index out of bounds
+              }
+              final movie = movies[index];
+              final AsyncValue<Movie> currentMovieAsync = AsyncValue.data(movie);
+              
+              return ProviderScope(
+                overrides: [
+                  currentPopularMovieProvider.overrideWithValue(currentMovieAsync)
+                ],
+                child: MovieTile(
+                  autofocus: false,
+                  index: index,
+                  focusNode: focusNodes[index],
+                  isFocused: isFocused && currentFocusedIndex == index,
+                ),
+              );
+            },
+            error: (e, stackTrace) => ErrorView(error: e.toString()),
+            loading: () => const AppLoader(),
+          );
+        } else {
+          final AsyncValue<Movie> currentPopularMovieFromIndex = ref
+              .watch(paginatedPopularMoviesProvider(index ~/ 20))
+              .whenData((pageData) => pageData.results[index % 20]);
 
-        return ProviderScope(
-          overrides: [
-            currentPopularMovieProvider
-                .overrideWithValue(currentPopularMovieFromIndex)
-          ],
-          child: MovieTile(
-            autofocus: false,
-            index: index,
-            focusNode: focusNodes[index],
-            isFocused: isFocused && currentFocusedIndex == index,
-          ),
-        );
+          return ProviderScope(
+            overrides: [
+              currentPopularMovieProvider
+                  .overrideWithValue(currentPopularMovieFromIndex)
+            ],
+            child: MovieTile(
+              autofocus: false,
+              index: index,
+              focusNode: focusNodes[index],
+              isFocused: isFocused && currentFocusedIndex == index,
+            ),
+          );
+        }
       },
     );
   }

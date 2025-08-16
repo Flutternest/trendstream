@@ -64,7 +64,7 @@ class CurrentSportsDetails extends ConsumerWidget {
             aspectRatio: 16 / 9,
             child: MiniPlayerWidget(
               videoUrl:
-                  'http://sample.vodobox.com/big_buck_bunny_4k/big_buck_bunny_4k.m3u8',
+                  'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
             ),
           ),
         ),

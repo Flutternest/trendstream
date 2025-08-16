@@ -59,8 +59,8 @@ class MovieHorizontalList extends HookConsumerWidget {
                       currentMovieIndex.value,
                       currentMovies.length,
                     );
+                    return false;
                   }
-                  return false;
 
                 case LogicalKeyboardKey.arrowRight:
                   if (currentMovieIndex.value < currentMovies.length - 1) {
@@ -70,6 +70,7 @@ class MovieHorizontalList extends HookConsumerWidget {
                       currentMovieIndex.value,
                       currentMovies.length,
                     );
+                    return false;
                   } else {
                     // Move to next genre if at the end of current genre
                     if (currentGenreIndex.value < genres.length - 1) {
@@ -81,6 +82,7 @@ class MovieHorizontalList extends HookConsumerWidget {
                         genreScrollControllers[currentGenreIndex.value],
                         mainScrollController,
                       );
+                      return false;
                     }
                   }
                   return true;
@@ -95,6 +97,7 @@ class MovieHorizontalList extends HookConsumerWidget {
                       genreScrollControllers[currentGenreIndex.value],
                       mainScrollController,
                     );
+                    return false;
                   }
                   return true;
 
@@ -108,6 +111,7 @@ class MovieHorizontalList extends HookConsumerWidget {
                       genreScrollControllers[currentGenreIndex.value],
                       mainScrollController,
                     );
+                    return false;
                   }
                   return true;
 

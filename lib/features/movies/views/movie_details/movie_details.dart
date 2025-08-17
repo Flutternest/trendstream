@@ -15,11 +15,13 @@ import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/shared_widgets/image.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/movies/controllers/movie_videos_provider.dart';
+import 'package:latest_movies/features/movies/models/movie/movie.dart';
 import 'package:latest_movies/features/movies/models/movie/spoken_language.dart';
+import 'package:latest_movies/features/movies/models/movie_video/movie_video.dart';
 import 'package:latest_movies/features/movies/views/movie_details/all_cast_crew_view.dart';
+
 import '../../../../core/config/config.dart';
 import '../../../../core/shared_widgets/button.dart';
-import '../../../../core/utilities/debouncer.dart';
 import '../../controllers/movie_details_provider.dart';
 
 class MovieDetailsView extends HookConsumerWidget {
@@ -27,10 +29,25 @@ class MovieDetailsView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final movieId =
-        useMemoized(() => ModalRoute.of(context)!.settings.arguments as int);
-    final movieDetailsAsync = ref.watch(movieDetailsProvider(movieId));
-    final movieVideosAsync = ref.watch(movieVideosProvider(movieId));
+    final arguments =
+        useMemoized(() => ModalRoute.of(context)!.settings.arguments);
+    final movieId = useMemoized(() {
+      if (arguments is Map<String, dynamic>) {
+        return arguments['id'] as int;
+      } else if (arguments is int) {
+        return arguments;
+      }
+      return null;
+    });
+    final initialMovie = useMemoized(() {
+      if (arguments is Map<String, dynamic>) {
+        return arguments['movie'] as Movie?;
+      }
+      return null;
+    });
+
+    final movieDetailsAsync = ref.watch(movieDetailsProvider(movieId ?? 0));
+    final movieVideosAsync = ref.watch(movieVideosProvider(movieId ?? 0));
     final posterContainerHeight = MediaQuery.of(context).size.height * 0.85;
 
     // States
@@ -73,540 +90,681 @@ class MovieDetailsView extends HookConsumerWidget {
       return null;
     }, [movieDetailsAsync]);
 
-    return Scaffold(
-      body: movieDetailsAsync.when(
-        data: (movie) => Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: NetworkImage(
-                "${Configs.largeBaseImagePath}${movie.backdropPath}",
-              ),
-              fit: BoxFit.cover,
-            ),
+    return KeyboardListener(
+      focusNode: FocusNode(),
+      onKeyEvent: (event) {
+        // Add keyboard shortcut for refresh (Ctrl+R or Cmd+R)
+        if (event is KeyDownEvent) {
+          // Check if Control or Meta (Cmd) key is pressed along with R key
+          if (event.logicalKey == LogicalKeyboardKey.keyR) {
+            // For now, we'll just refresh on R key press
+            // In a real implementation, you'd need to track modifier keys separately
+            ref.invalidate(movieDetailsProvider(movieId ?? 0));
+            ref.invalidate(movieVideosProvider(movieId ?? 0));
+          }
+        }
+      },
+      child: Scaffold(
+        body: movieDetailsAsync.when(
+          data: (movie) => _buildMovieDetails(
+              context,
+              movie,
+              movieVideosAsync,
+              uniqueMainCrew,
+              posterContainerHeight,
+              initialMovie,
+              movieDetailsAsync,
+              ref,
+              movieId),
+          error: (error, stackTrace) {
+            // If we have initial movie data, show it while retrying
+            if (initialMovie != null) {
+              return _buildMovieDetails(
+                  context,
+                  initialMovie,
+                  movieVideosAsync,
+                  uniqueMainCrew,
+                  posterContainerHeight,
+                  initialMovie,
+                  movieDetailsAsync,
+                  ref,
+                  movieId);
+            }
+            return ErrorView(
+              error: error.toString(),
+              onRetry: () {
+                ref.invalidate(movieDetailsProvider(movieId ?? 0));
+              },
+            );
+          },
+          loading: () {
+            // If we have initial movie data, show it while loading
+            if (initialMovie != null) {
+              return _buildMovieDetails(
+                  context,
+                  initialMovie,
+                  movieVideosAsync,
+                  uniqueMainCrew,
+                  posterContainerHeight,
+                  initialMovie,
+                  movieDetailsAsync,
+                  ref,
+                  movieId);
+            }
+            return const AppLoader();
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMovieDetails(
+      BuildContext context,
+      Movie movie,
+      AsyncValue<List<MovieVideo>> movieVideosAsync,
+      ValueNotifier<Map<String, String>> uniqueMainCrew,
+      double posterContainerHeight,
+      Movie? initialMovie,
+      AsyncValue<Movie> movieDetailsAsync,
+      WidgetRef ref,
+      int? movieId) {
+    return Container(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: NetworkImage(
+            "${Configs.largeBaseImagePath}${movie.backdropPath}",
           ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-            child: ColoredBox(
-              color: Colors.black.withOpacity(.8),
-              child: SingleChildScrollView(
-                child: FocusTraversalGroup(
-                  policy: OrderedTraversalPolicy(),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildBackButton(context),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                        height: posterContainerHeight,
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              height: posterContainerHeight,
-                              // width: 250,
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(.7),
-                                        blurRadius: 5,
-                                        spreadRadius: 1,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+        child: ColoredBox(
+          color: Colors.black.withOpacity(.8),
+          child: SingleChildScrollView(
+            child: FocusTraversalGroup(
+              policy: OrderedTraversalPolicy(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildBackButton(context, ref, movieId, movieDetailsAsync),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                    height: posterContainerHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          height: posterContainerHeight,
+                          // width: 250,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(.7),
+                                    blurRadius: 5,
+                                    spreadRadius: 1,
+                                    offset: const Offset(0, 1),
                                   ),
-                                  child: AppImage(
-                                    imageUrl:
-                                        "${Configs.largeBaseImagePath}${movie.posterPath}",
+                                ],
+                              ),
+                              child: AppImage(
+                                imageUrl:
+                                    "${Configs.largeBaseImagePath}${movie.posterPath}",
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              FittedBox(
+                                child: Text(
+                                  validString(movie.originalTitle),
+                                  style: const TextStyle(
+                                    fontSize: 24.0,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  FittedBox(
-                                    child: Text(
-                                      validString(movie.originalTitle),
-                                      style: const TextStyle(
-                                        fontSize: 24.0,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
+
+                              const SizedBox(height: 5),
+                              if (movie.tagline?.isNotEmpty ?? false)
+                                Text(
+                                  validString(movie.tagline),
+                                  style: const TextStyle(
+                                    fontSize: 14.0,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w300,
+                                  ),
+                                ),
+                              const SizedBox(height: 20),
+                              // Show loading indicator if we're using initial movie data and fetching detailed data
+                              if (initialMovie != null &&
+                                  movieDetailsAsync.isLoading)
+                                Row(
+                                  children: [
+                                    const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                                Colors.white),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 5),
-                                  if (movie.tagline?.isNotEmpty ?? false)
+                                    const SizedBox(width: 8),
                                     Text(
-                                      validString(movie.tagline),
-                                      style: const TextStyle(
-                                        fontSize: 14.0,
-                                        color: Colors.white,
+                                      'Loading additional details...',
+                                      style: TextStyle(
+                                        fontSize: 12.0,
+                                        color: Colors.grey[400],
                                         fontWeight: FontWeight.w300,
                                       ),
                                     ),
-                                  const SizedBox(height: 20),
+                                  ],
+                                ),
+                              const SizedBox(height: 20),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Icon(
-                                            Icons.star,
-                                            color: Colors.yellow,
-                                            size: 16,
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            (movie.voteAverage ?? 0.0)
-                                                .toStringAsFixed(2),
-                                            style: const TextStyle(
-                                              fontSize: 14.0,
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 5),
-                                          Text(
-                                            "(${movie.voteCount})",
-                                            style: TextStyle(
-                                              fontSize: 14.0,
-                                              color: Colors.grey[500],
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
+                                      const Icon(
+                                        Icons.star,
+                                        color: Colors.yellow,
+                                        size: 16,
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Text(
-                                    "${(movie.adult ?? false) ? "18+ | " : ""}${movie.genres?.map((e) => e.name).join(" / ")} | ${movie.releaseDate?.split("-").first}",
-                                    style: TextStyle(
-                                      fontSize: 14.0,
-                                      color: Colors.grey[500],
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.info_outline,
-                                          color: Colors.grey, size: 14),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          context.localisations
-                                              .overviewTextClickDesc,
-                                          style: const TextStyle(
-                                            color: Colors.grey,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w300,
-                                          ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        (movie.voteAverage ?? 0.0)
+                                            .toStringAsFixed(2),
+                                        style: const TextStyle(
+                                          fontSize: 14.0,
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        "(${movie.voteCount})",
+                                        style: TextStyle(
+                                          fontSize: 14.0,
+                                          color: Colors.grey[500],
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  verticalSpaceTiny,
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                "${(movie.adult ?? false) ? "18+ | " : ""}${movie.genres?.isNotEmpty ?? false ? movie.genres?.map((e) => e.name).join(" / ") : "N/A"} | ${movie.releaseDate?.split("-").first}",
+                                style: TextStyle(
+                                  fontSize: 14.0,
+                                  color: Colors.grey[500],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  const Icon(Icons.info_outline,
+                                      color: Colors.grey, size: 14),
+                                  const SizedBox(width: 4),
                                   Expanded(
-                                    child: InkWell(
-                                      onTap: () {
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) {
-                                            return AlertDialog(
-                                              backgroundColor: kBackgroundColor,
-                                              title: Text(
-                                                context.localisations.overview,
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 20,
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                              ),
-                                              content: SingleChildScrollView(
-                                                child: Text(
-                                                  validString(movie.overview),
-                                                  style: const TextStyle(
-                                                    fontSize: 14.0,
-                                                    color: Colors.white,
-                                                    fontWeight: FontWeight.w300,
-                                                  ),
-                                                ),
-                                              ),
-                                              actions: [
-                                                AppButton(
-                                                  autofocus: true,
-                                                  text: context
-                                                      .localisations.close,
-                                                  onTap: () {
-                                                    Navigator.pop(context);
-                                                  },
-                                                ),
-                                              ],
-                                            );
-                                          },
-                                        );
-                                      },
-                                      child: Builder(
-                                        builder: (context) {
-                                          final hasPrimaryFocus =
-                                              Focus.of(context).hasPrimaryFocus;
-                                          return Container(
-                                            decoration: hasPrimaryFocus
-                                                ? BoxDecoration(
-                                                    color: kPrimaryAccentColor
-                                                        .withOpacity(.2),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            4),
-                                                  )
-                                                : null,
+                                    child: Text(
+                                      context
+                                          .localisations.overviewTextClickDesc,
+                                      style: const TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w300,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              verticalSpaceTiny,
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () {
+                                    showDialog(
+                                      context: context,
+                                      builder: (context) {
+                                        return AlertDialog(
+                                          backgroundColor: kBackgroundColor,
+                                          title: Text(
+                                            context.localisations.overview,
+                                            style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                          content: SingleChildScrollView(
                                             child: Text(
                                               validString(movie.overview),
                                               style: const TextStyle(
                                                 fontSize: 14.0,
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w300,
-                                                overflow: TextOverflow.fade,
                                               ),
                                             ),
-                                          );
-                                        },
-                                      ),
+                                          ),
+                                          actions: [
+                                            AppButton(
+                                              autofocus: true,
+                                              text: context.localisations.close,
+                                              onTap: () {
+                                                Navigator.pop(context);
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      },
+                                    );
+                                  },
+                                  child: Builder(
+                                    builder: (context) {
+                                      final hasPrimaryFocus =
+                                          Focus.of(context).hasPrimaryFocus;
+                                      return Container(
+                                        decoration: hasPrimaryFocus
+                                            ? BoxDecoration(
+                                                color: kPrimaryAccentColor
+                                                    .withOpacity(.2),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              )
+                                            : null,
+                                        child: Text(
+                                          validString(movie.overview),
+                                          style: const TextStyle(
+                                            fontSize: 14.0,
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w300,
+                                            overflow: TextOverflow.fade,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Wrap(
+                                spacing: 20,
+                                runSpacing: 10,
+                                children: [
+                                  ...uniqueMainCrew.value.entries.map((entry) =>
+                                      CreatorItem(
+                                          name: entry.key, job: entry.value)),
+                                ],
+                              ),
+                              verticalSpaceSmall,
+                              Row(
+                                children: [
+                                  AppButton(
+                                    autofocus: true,
+                                    text: context.localisations.watchNow,
+                                    onTap: () async {
+                                      // AppRouter.navigateToPage(
+                                      //     Routes.playerView);
+                                      const platform = MethodChannel(
+                                          'com.example.latest_movies/channel');
+                                      await platform
+                                          .invokeMethod("navigateToPlayer");
+                                    },
+                                    prefix: const Icon(
+                                      Icons.play_circle,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
-                                  Wrap(
-                                    spacing: 20,
-                                    runSpacing: 10,
-                                    children: [
-                                      ...uniqueMainCrew.value.entries.map(
-                                          (entry) => CreatorItem(
-                                              name: entry.key,
-                                              job: entry.value)),
-                                    ],
-                                  ),
-                                  verticalSpaceSmall,
-                                  Row(
-                                    children: [
-                                      AppButton(
-                                        autofocus: true,
-                                        text: context.localisations.watchNow,
-                                        onTap: () async {
-                                          // AppRouter.navigateToPage(
-                                          //     Routes.playerView);
-                                          const platform = MethodChannel(
-                                              'com.example.latest_movies/channel');
-                                          await platform
-                                              .invokeMethod("navigateToPlayer");
-                                        },
-                                        prefix: const Icon(
-                                          Icons.play_circle,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      horizontalSpaceRegular,
-                                      movieVideosAsync.when(
-                                        data: (videos) {
-                                          final hasTrailer = videos.any(
-                                              (element) =>
-                                                  element.type == "Trailer" &&
-                                                  (element.official ?? false) &&
-                                                  element.site == "YouTube");
+                                  horizontalSpaceRegular,
+                                  // Remove duplicate refresh button since it's now in the top navigation
+                                  movieVideosAsync.when(
+                                    data: (videos) {
+                                      final hasTrailer = videos.any((element) =>
+                                          element.type == "Trailer" &&
+                                          (element.official ?? false) &&
+                                          element.site == "YouTube");
 
-                                          return AppButton(
-                                            text: context
-                                                .localisations.watchTrailer,
-                                            onTap: !hasTrailer
-                                                ? null
-                                                : () async {
-                                                    final firstTrailer =
-                                                        videos.firstWhere(
-                                                      (element) {
-                                                        return element.type ==
-                                                                "Trailer" &&
-                                                            (element.official ??
-                                                                false) &&
-                                                            element.site ==
-                                                                "YouTube";
-                                                      },
-                                                    );
-
-                                                    // if (!await launchUrl(Uri.parse(
-                                                    //     "https://youtube.com/watch?v=${firstTrailer.key}"))) {
-                                                    //   AppUtils.showSnackBar(context,
-                                                    //       message:
-                                                    //           "This TV does not support opening URLs");
-                                                    // }
-
-                                                    const platform = MethodChannel(
-                                                        'com.example.latest_movies/channel');
-                                                    await platform.invokeMethod(
-                                                        "navigateToYoutubePlayer",
-                                                        {
-                                                          'video_id':
-                                                              firstTrailer.key
-                                                        });
-
-                                                    // AppRouter.navigateToPage(
-                                                    //     Routes
-                                                    //         .youtubePlayerView,
-                                                    //     arguments:
-                                                    //         firstTrailer.key);
+                                      return AppButton(
+                                        text:
+                                            context.localisations.watchTrailer,
+                                        onTap: !hasTrailer
+                                            ? null
+                                            : () async {
+                                                final firstTrailer =
+                                                    videos.firstWhere(
+                                                  (element) {
+                                                    return element.type ==
+                                                            "Trailer" &&
+                                                        (element.official ??
+                                                            false) &&
+                                                        element.site ==
+                                                            "YouTube";
                                                   },
-                                          );
-                                        },
-                                        loading: () => AppButton(
-                                            text: context
-                                                .localisations.watchTrailer,
-                                            isLoading: true,
-                                            onTap: null),
-                                        error: (e, s) =>
-                                            const SizedBox.shrink(),
-                                      ),
-                                    ],
+                                                );
+
+                                                // if (!await launchUrl(Uri.parse(
+                                                //     "https://youtube.com/watch?v=${firstTrailer.key}"))) {
+                                                //   AppUtils.showSnackBar(context,
+                                                //       message:
+                                                //           "This TV does not support opening URLs");
+                                                // }
+
+                                                const platform = MethodChannel(
+                                                    'com.example.latest_movies/channel');
+                                                await platform.invokeMethod(
+                                                    "navigateToYoutubePlayer", {
+                                                  'video_id': firstTrailer.key
+                                                });
+
+                                                // AppRouter.navigateToPage(
+                                                //     Routes
+                                                //         .youtubePlayerView,
+                                                //     arguments:
+                                                //         firstTrailer.key);
+                                              },
+                                      );
+                                    },
+                                    loading: () => AppButton(
+                                        text:
+                                            context.localisations.watchTrailer,
+                                        isLoading: true,
+                                        onTap: null),
+                                    error: (e, s) => const SizedBox.shrink(),
                                   ),
                                 ],
                               ),
-                            )
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            verticalSpaceMedium,
-                            Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    context.localisations.cast,
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                  verticalSpaceMedium,
-                                  Builder(builder: (context) {
-                                    // Get the screen width
-                                    double screenWidth =
-                                        MediaQuery.of(context).size.width;
-                                    double itemWidth =
-                                        150; // Replace this with the actual width of your items
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        verticalSpaceMedium,
+                        Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.localisations.cast,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              verticalSpaceMedium,
+                              Builder(builder: (context) {
+                                // Get the screen width
+                                double screenWidth =
+                                    MediaQuery.of(context).size.width;
+                                double itemWidth =
+                                    150; // Replace this with the actual width of your items
 
-                                    int itemCount = min(
-                                        (movie.credits?.cast?.length ?? 0) + 1,
-                                        screenWidth ~/ itemWidth);
+                                int itemCount = min(
+                                    (movie.credits?.cast?.length ?? 0) + 1,
+                                    screenWidth ~/ itemWidth);
 
-                                    return SizedBox(
-                                      height: 230,
-                                      child: Row(
-                                        children: List.generate(
-                                          itemCount,
-                                          (index) {
-                                            return Builder(
-                                              builder: (context) {
-                                                if (index == itemCount - 1) {
-                                                  return Padding(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                            16.0),
-                                                    child: TextButton.icon(
-                                                        onPressed: () {
-                                                          AppRouter.navigateToPage(
-                                                              Routes
-                                                                  .allMovieCastAndCrew,
-                                                              arguments: AllClassAndCrewArgs(
-                                                                  credits: movie
-                                                                      .credits!,
-                                                                  backdropPath:
-                                                                      movie
-                                                                          .backdropPath!));
-                                                        },
-                                                        style: TextButton
-                                                            .styleFrom(
-                                                          foregroundColor:
-                                                              Colors.white,
-                                                        ),
-                                                        icon: const Icon(Icons
-                                                            .arrow_forward),
-                                                        label: Text(context
-                                                            .localisations
-                                                            .viewAll)),
-                                                  );
-                                                }
-                                                final cast =
-                                                    movie.credits?.cast?[index];
-                                                return CastTileV1(
-                                                    name: cast?.name,
-                                                    character: cast?.character,
-                                                    profilePath:
-                                                        cast?.profilePath);
-                                              },
-                                            );
+                                return SizedBox(
+                                  height: 230,
+                                  child: Row(
+                                    children: List.generate(
+                                      itemCount,
+                                      (index) {
+                                        return Builder(
+                                          builder: (context) {
+                                            if (index == itemCount - 1) {
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.all(16.0),
+                                                child: TextButton.icon(
+                                                    onPressed: () {
+                                                      AppRouter.navigateToPage(
+                                                          Routes
+                                                              .allMovieCastAndCrew,
+                                                          arguments: AllClassAndCrewArgs(
+                                                              credits: movie
+                                                                  .credits!,
+                                                              backdropPath: movie
+                                                                  .backdropPath!));
+                                                    },
+                                                    style: TextButton.styleFrom(
+                                                      foregroundColor:
+                                                          Colors.white,
+                                                    ),
+                                                    icon: const Icon(
+                                                        Icons.arrow_forward),
+                                                    label: Text(context
+                                                        .localisations
+                                                        .viewAll)),
+                                              );
+                                            }
+                                            final cast =
+                                                movie.credits?.cast?[index];
+                                            return CastTileV1(
+                                                name: cast?.name,
+                                                character: cast?.character,
+                                                profilePath: cast?.profilePath);
                                           },
-                                        ),
-                                      ),
-                                    );
-                                  }),
-
-                                  // SizedBox(
-                                  //   height: 220,
-                                  //   child: ListView.builder(
-                                  //     scrollDirection: Axis.horizontal,
-                                  //     itemCount: min(
-                                  //             movie.credits?.cast?.length ?? 10,
-                                  //             10) +
-                                  //         1,
-                                  //     clipBehavior: Clip.none,
-                                  //     itemBuilder: (context, index) {
-                                  //       //if item is last
-                                  //       if (index ==
-                                  //           min(
-                                  //               movie.credits?.cast?.length ??
-                                  //                   10,
-                                  //               10)) {
-                                  //         return Padding(
-                                  //           padding: const EdgeInsets.all(16.0),
-                                  //           child: TextButton.icon(
-                                  //               onPressed: () {
-                                  //                 AppRouter.navigateToPage(
-                                  //                     Routes
-                                  //                         .allMovieCastAndCrew,
-                                  //                     arguments:
-                                  //                         AllClassAndCrewArgs(
-                                  //                             credits: movie
-                                  //                                 .credits!,
-                                  //                             backdropPath: movie
-                                  //                                 .backdropPath!));
-                                  //               },
-                                  //               style: TextButton.styleFrom(
-                                  //                 foregroundColor: Colors.white,
-                                  //               ),
-                                  //               icon: const Icon(
-                                  //                   Icons.arrow_forward),
-                                  //               label: const Text("View all")),
-                                  //         );
-                                  //       }
-                                  //       final cast =
-                                  //           movie.credits?.cast?[index];
-                                  //       return CastTile(
-                                  //           name: cast?.name,
-                                  //           character: cast?.character,
-                                  //           profilePath: cast?.profilePath);
-                                  //     },
-                                  //   ),
-                                  // ),
-                                ]),
-                            verticalSpaceMedium,
-                            InkWell(
-                              onTap: () {},
-                              child: Builder(builder: (context) {
-                                final hasFocus =
-                                    Focus.of(context).hasPrimaryFocus;
-
-                                return Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      context.localisations.stats,
-                                      style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold),
+                                        );
+                                      },
                                     ),
-                                    verticalSpaceMedium,
-                                    Container(
-                                      padding: const EdgeInsets.all(14.0),
-                                      decoration: BoxDecoration(
-                                        color: hasFocus
-                                            ? kPrimaryAccentColor
-                                                .withOpacity(.5)
-                                            : kPrimaryAccentColor
-                                                .withOpacity(.2),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      width: double.infinity,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          StatsItem(
-                                            stat: context.localisations.budget,
-                                            value:
-                                                "\$${NumberFormat.currency(name: "").format(movie.budget)}",
-                                          ),
-                                          verticalSpaceRegular,
-                                          StatsItem(
-                                            stat: context.localisations.revenue,
-                                            value:
-                                                "\$${NumberFormat.currency(name: "").format(movie.revenue ?? 0)}",
-                                          ),
-                                          verticalSpaceRegular,
-                                          StatsItem(
-                                            stat: context
-                                                .localisations.originalLang,
-                                            value: movie.spokenLanguages
-                                                    ?.firstWhere(
-                                                        (element) =>
-                                                            element.iso6391 ==
-                                                            movie
-                                                                .originalLanguage,
-                                                        orElse: () =>
-                                                            const SpokenLanguage(
-                                                                name:
-                                                                    "English"))
-                                                    .name ??
-                                                "N/A",
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    verticalSpaceMedium
-                                  ],
+                                  ),
                                 );
                               }),
-                            ),
-                          ],
+
+                              // SizedBox(
+                              //   height: 220,
+                              //   child: ListView.builder(
+                              //     scrollDirection: Axis.horizontal,
+                              //     itemCount: min(
+                              //             movie.credits?.cast?.length ?? 10,
+                              //             10) +
+                              //         1,
+                              //     clipBehavior: Clip.none,
+                              //     itemBuilder: (context, index) {
+                              //       //if item is last
+                              //       if (index ==
+                              //           min(
+                              //               movie.credits?.cast?.length ??
+                              //                   10,
+                              //               10)) {
+                              //         return Padding(
+                              //           padding: const EdgeInsets.all(16.0),
+                              //           child: TextButton.icon(
+                              //               onPressed: () {
+                              //                 AppRouter.navigateToPage(
+                              //                     Routes
+                              //                         .allMovieCastAndCrew,
+                              //                     arguments:
+                              //                         AllClassAndCrewArgs(
+                              //                             credits: movie
+                              //                                 .credits!,
+                              //                             backdropPath: movie
+                              //                                 .backdropPath!));
+                              //               },
+                              //               style: TextButton.styleFrom(
+                              //                 foregroundColor: Colors.white,
+                              //               ),
+                              //               icon: const Icon(
+                              //                   Icons.arrow_forward),
+                              //               label: const Text("View all")),
+                              //         );
+                              //       }
+                              //       final cast =
+                              //           movie.credits?.cast?[index];
+                              //       return CastTile(
+                              //           name: cast?.name,
+                              //           character: cast?.character,
+                              //           profilePath: cast?.profilePath);
+                              //     },
+                              //   ),
+                              // ),
+                            ]),
+                        verticalSpaceMedium,
+                        InkWell(
+                          onTap: () {},
+                          child: Builder(builder: (context) {
+                            final hasFocus = Focus.of(context).hasPrimaryFocus;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.localisations.stats,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                verticalSpaceMedium,
+                                Container(
+                                  padding: const EdgeInsets.all(14.0),
+                                  decoration: BoxDecoration(
+                                    color: hasFocus
+                                        ? kPrimaryAccentColor.withOpacity(.5)
+                                        : kPrimaryAccentColor.withOpacity(.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  width: double.infinity,
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      StatsItem(
+                                        stat: context.localisations.budget,
+                                        value: movie.budget != null
+                                            ? "\$${NumberFormat.currency(name: "").format(movie.budget)}"
+                                            : "N/A",
+                                      ),
+                                      verticalSpaceRegular,
+                                      StatsItem(
+                                        stat: context.localisations.revenue,
+                                        value: movie.revenue != null
+                                            ? "\$${NumberFormat.currency(name: "").format(movie.revenue ?? 0)}"
+                                            : "N/A",
+                                      ),
+                                      verticalSpaceRegular,
+                                      StatsItem(
+                                        stat:
+                                            context.localisations.originalLang,
+                                        value: movie.spokenLanguages
+                                                ?.firstWhere(
+                                                    (element) =>
+                                                        element.iso6391 ==
+                                                        movie.originalLanguage,
+                                                    orElse: () =>
+                                                        const SpokenLanguage(
+                                                            name: "English"))
+                                                .name ??
+                                            "N/A",
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                verticalSpaceMedium
+                              ],
+                            );
+                          }),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
         ),
-        loading: () => const AppLoader(),
-        error: (error, stack) => const ErrorView(),
       ),
     );
   }
 
-  Padding _buildBackButton(BuildContext context) {
+  Padding _buildBackButton(BuildContext context, WidgetRef ref, int? movieId,
+      AsyncValue<Movie> movieDetailsAsync) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: TextButton.icon(
-          onPressed: () {
-            Debouncer(delay: const Duration(milliseconds: 500)).call(() {
-              AppRouter.pop();
-            });
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.white,
+      child: Row(
+        children: [
+          AppButton(
+            autofocus: true,
+            text: context.localisations.back,
+            onTap: () {
+              Navigator.pop(context);
+            },
+            prefix: const Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+            ),
           ),
-          icon: const Icon(Icons.arrow_back),
-          label: Text(context.localisations.back)),
+          const Spacer(),
+          // Add refresh button in the top right
+          Tooltip(
+            message: 'Refresh movie details from TMDB (Press R key)',
+            child: AppButton(
+              text: 'Refresh',
+              isLoading: movieDetailsAsync.isLoading,
+              onTap: movieDetailsAsync.isLoading
+                  ? null
+                  : () {
+                      // Invalidate the movie details provider to refetch data
+                      ref.invalidate(movieDetailsProvider(movieId ?? 0));
+                      ref.invalidate(movieVideosProvider(movieId ?? 0));
+                    },
+              prefix: movieDetailsAsync.isLoading
+                  ? const SizedBox.shrink()
+                  : const Icon(
+                      Icons.refresh,
+                      color: Colors.white,
+                    ),
+            ),
+          ),
+          // Show success indicator when refresh completes
+          if (movieDetailsAsync.hasValue && !movieDetailsAsync.isLoading)
+            Container(
+              margin: const EdgeInsets.only(left: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    'Updated',
+                    style: TextStyle(
+                      fontSize: 12.0,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

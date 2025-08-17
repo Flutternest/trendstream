@@ -1337,7 +1337,9 @@ public class PlayerActivity extends Activity {
 
         if (player.canAdvertiseSession()) {
             try {
-                mediaSession = new MediaSession.Builder(this, player).build();
+                mediaSession = new MediaSession.Builder(this, player)
+                        .setId("player-" + System.currentTimeMillis())
+                        .build();
             } catch (IllegalStateException e) {
                 e.printStackTrace();
             }

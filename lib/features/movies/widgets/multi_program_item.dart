@@ -26,7 +26,7 @@ class MultiProgramTile extends HookConsumerWidget {
       data: (asyncData) {
         var show = asyncData.value;
         if (show is Movie) {
-          return RawMovieTile(autofocus: autofocus, movie: show);
+          return MovieTile(autofocus: autofocus, index: 0, focusNode: FocusNode());
         } else {
           return RawTvShowItem(autofocus: autofocus, show: show as TvShow);
         }

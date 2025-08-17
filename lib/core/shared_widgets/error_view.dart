@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 
-class ErrorView extends StatelessWidget {
+class ErrorView extends HookWidget {
   const ErrorView({
     Key? key,
     this.error,
@@ -15,6 +16,16 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final retryButtonFocusNode = useFocusNode();
+
+    // Ensure the retry button gets focus when the error view is displayed
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        retryButtonFocusNode.requestFocus();
+      });
+      return null;
+    }, []);
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -25,6 +36,7 @@ class ErrorView extends StatelessWidget {
           if (onRetry != null) ...[
             verticalSpaceSmall,
             ElevatedButton(
+              focusNode: retryButtonFocusNode,
               onPressed: onRetry,
               child: Text(context.localisations.retry),
             ),

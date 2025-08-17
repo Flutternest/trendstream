@@ -10,4 +10,12 @@ class Configs {
   static const String v3ImagePrefix = "http://15.235.12.125:90";
 
   static const String v3ApiBaseUrl = "http://15.235.12.125:8081/api-tv-movies";
+
+  // Demo video URLs for testing video playback
+  // Try different formats to ensure compatibility
+  static const String demoVideoUrl = "http://23.237.117.10/testmax1080.mkv";
+  static const String demoVideoUrlMp4 =
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+  static const String demoVideoUrlHls =
+      "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
 }

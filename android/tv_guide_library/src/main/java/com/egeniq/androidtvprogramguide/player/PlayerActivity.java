@@ -268,12 +268,24 @@ public class PlayerActivity extends Activity {
         final String type = launchIntent.getType();
         final Bundle extras = launchIntent.getExtras();
         final String extrasUrl = extras.getString("url", "--no-val--");
+        Log.d("PlayerActivity", "onCreate: Extras URL received: " + extrasUrl);
 
         if (!Objects.equals(extrasUrl, "--no-val--") && !Objects.equals(extrasUrl, "")) {
-            final Uri uri = Uri.parse(extrasUrl);
-            mPrefs.updateMedia(this, uri, null);
-            focusPlay = true;
-        } else if ("com.egeniq.androidtvprogramguide.action.SHORTCUT_VIDEOS".equals(action)) {
+            Log.d("PlayerActivity", "onCreate: Processing extras URL: " + extrasUrl);
+            try {
+                final Uri uri = Uri.parse(extrasUrl);
+                Log.d("PlayerActivity", "onCreate: Parsed URI: " + uri);
+                mPrefs.updateMedia(this, uri, null);
+                focusPlay = true;
+                Log.d("PlayerActivity", "onCreate: Media updated and focusPlay set to true");
+            } catch (Exception e) {
+                Log.e("PlayerActivity", "onCreate: Error parsing URL: " + extrasUrl, e);
+            }
+        } else {
+            Log.d("PlayerActivity", "onCreate: No valid extras URL found, checking other sources");
+        }
+
+        if ("com.egeniq.androidtvprogramguide.action.SHORTCUT_VIDEOS".equals(action)) {
             openFile(Utils.getMoviesFolderUri());
         } else if (Intent.ACTION_SEND.equals(action) && "text/plain".equals(type)) {
             String text = launchIntent.getStringExtra(Intent.EXTRA_TEXT);

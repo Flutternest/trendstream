@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -22,7 +23,9 @@ import 'package:latest_movies/features/movies/views/movie_details/all_cast_crew_
 
 import '../../../../core/config/config.dart';
 import '../../../../core/shared_widgets/button.dart';
+import '../../../../core/shared_widgets/loading_overlay.dart';
 import '../../controllers/movie_details_provider.dart';
+import '../../controllers/native_player_controller.dart';
 
 class MovieDetailsView extends HookConsumerWidget {
   const MovieDetailsView({super.key});
@@ -417,12 +420,45 @@ class MovieDetailsView extends HookConsumerWidget {
                                     autofocus: true,
                                     text: context.localisations.watchNow,
                                     onTap: () async {
-                                      // AppRouter.navigateToPage(
-                                      //     Routes.playerView);
-                                      const platform = MethodChannel(
-                                          'com.example.latest_movies/channel');
-                                      await platform
-                                          .invokeMethod("navigateToPlayer");
+                                      // Use NativePlayerController for video playback
+                                      // For demo purposes, using a sample video URL
+                                      // In a real app, this would come from the movie data or a streaming service
+                                      const List<String> demoVideoUrls = [
+                                        Configs
+                                            .demoVideoUrlMp4, // Try MP4 first for better compatibility
+                                        Configs.demoVideoUrl, // Fallback to MKV
+                                        Configs
+                                            .demoVideoUrlHls, // Fallback to HLS stream
+                                      ];
+
+                                      String? lastError;
+                                      for (final videoUrl in demoVideoUrls) {
+                                        try {
+                                          final controller =
+                                              NativePlayerController(
+                                            NativePlayerControllerArgs(
+                                              loadingOverlay:
+                                                  LoadingOverlay.of(context),
+                                              videoUrl: videoUrl,
+                                            ),
+                                          );
+                                          await controller.navigateToPlayer();
+                                          return; // Success, exit the loop
+                                        } catch (e) {
+                                          lastError = e.toString();
+                                          // Continue to next URL if this one fails
+                                        }
+                                      }
+
+                                      // If all URLs fail, show error
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              'Failed to play video. All demo URLs failed. Last error: $lastError'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
                                     },
                                     prefix: const Icon(
                                       Icons.play_circle,
@@ -430,6 +466,61 @@ class MovieDetailsView extends HookConsumerWidget {
                                     ),
                                   ),
                                   horizontalSpaceRegular,
+                                  // Debug button to show video URLs (remove in production)
+                                  if (kDebugMode)
+                                    AppButton(
+                                      text: 'Debug Video',
+                                      onTap: () {
+                                        final videoUrls = [
+                                          Configs.demoVideoUrlMp4,
+                                          Configs.demoVideoUrl,
+                                          Configs.demoVideoUrlHls,
+                                        ];
+
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title:
+                                                const Text('Debug Video URLs'),
+                                            content: Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                    'Available demo video URLs:'),
+                                                const SizedBox(height: 8),
+                                                ...videoUrls.map((url) =>
+                                                    Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              bottom: 4),
+                                                      child: SelectableText(
+                                                        url,
+                                                        style: const TextStyle(
+                                                            fontSize: 12),
+                                                      ),
+                                                    )),
+                                                const SizedBox(height: 8),
+                                                const Text(
+                                                    'Try the Watch Now button to test video playback.'),
+                                              ],
+                                            ),
+                                            actions: [
+                                              AppButton(
+                                                text: 'Close',
+                                                onTap: () =>
+                                                    Navigator.pop(context),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                      prefix: const Icon(
+                                        Icons.bug_report,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   // Remove duplicate refresh button since it's now in the top navigation
                                   movieVideosAsync.when(
                                     data: (videos) {

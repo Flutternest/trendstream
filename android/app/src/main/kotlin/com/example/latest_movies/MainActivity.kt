@@ -36,10 +36,23 @@ class MainActivity : FlutterActivity() {
                 startActivity(intent)
                 result.success(null)
             } else  if (call.method == "navigateToPlayer") {
-                val intent = Intent(context, PlayerActivity::class.java)
-                intent.putExtra("url", "http://23.237.117.10/testmax1080.mkv")
-                startActivity(intent)
-                result.success(null)
+                val args = call.arguments as Map<*, *>?
+                Log.d("MainActivity", "navigateToPlayer: Arguments received: $args")
+                
+                val videoUrl = args?.get("videoUrl") as String?
+                Log.d("MainActivity", "navigateToPlayer: Video URL extracted: $videoUrl")
+                
+                if (videoUrl != null && videoUrl.isNotEmpty()) {
+                    Log.d("MainActivity", "navigateToPlayer: Starting PlayerActivity with URL: $videoUrl")
+                    val intent = Intent(context, PlayerActivity::class.java)
+                    intent.putExtra("url", videoUrl)
+                    startActivity(intent)
+                    result.success(null)
+                    Log.d("MainActivity", "navigateToPlayer: PlayerActivity started successfully")
+                } else {
+                    Log.e("MainActivity", "navigateToPlayer: No valid video URL received")
+                    result.error("INVALID_URL", "No valid video URL provided", null)
+                }
             }  else  if (call.method == "navigateToYoutubePlayer") {
                 val args = call.arguments as Map<*, *>;
                 val intent = Intent(context, YoutubePlayerActivity::class.java)

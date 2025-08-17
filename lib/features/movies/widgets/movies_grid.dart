@@ -5,12 +5,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/genre_selector.dart';
 import 'package:latest_movies/core/utilities/app_logger.dart';
 import 'package:latest_movies/features/movies/controllers/genre_list_provider.dart';
 import 'package:latest_movies/features/movies/controllers/popular_movies_count_provider.dart';
 
-import '../../../core/router/router.dart';
 import '../../../core/shared_widgets/app_loader.dart';
 import '../../../core/shared_widgets/error_view.dart';
 import '../../../core/utilities/responsive.dart';
@@ -240,41 +240,10 @@ class MoviesGrid extends HookConsumerWidget {
                     });
                     moviesGridFocus.requestFocus();
                   } else if (selectedSection.value == Sections.movies) {
-                    // Navigate to movie detail using the callback
+                    // Navigate to movie detail (handled by MovieTile)
                     final totalMovies = popularMoviesCount.asData?.value ?? 0;
-                    log(
-                        'MoviesGrid: select/enter pressed on movies section, totalMovies: $totalMovies, currentFocusedIndex: ${currentMovieIndex.value}');
                     if (currentMovieIndex.value < totalMovies) {
-                      // Get the movie ID from the current focused index
-                      if (useTMDBAPI) {
-                        log('MoviesGrid: using TMDB API for movie selection');
-                        final moviesAsync = ref.read(
-                            tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
-                        moviesAsync.whenData((movies) {
-                          if (currentMovieIndex.value < movies.length) {
-                            final movie = movies[currentMovieIndex.value];
-                            log(
-                                'MoviesGrid: navigating to movie details with ID: ${movie.id}');
-                            AppRouter.navigateToPage(Routes.detailsView,
-                                arguments: {'id': movie.id, 'movie': movie});
-                          }
-                        });
-                      } else {
-                        log(
-                            'MoviesGrid: using non-TMDB API for movie selection');
-                        // For non-TMDB API, we need to get the movie from the paginated provider
-                        final movieAsync = ref.read(
-                            paginatedPopularMoviesProvider(
-                                currentMovieIndex.value ~/ 20));
-                        movieAsync.whenData((pageData) {
-                          final movie =
-                              pageData.results[currentMovieIndex.value % 20];
-                          log(
-                              'MoviesGrid: navigating to movie details with ID: ${movie.id}');
-                          AppRouter.navigateToPage(Routes.detailsView,
-                              arguments: {'id': movie.id, 'movie': movie});
-                        });
-                      }
+                      // The navigation will be handled by the MovieTile's onTap
                     }
                   }
                   return true;
@@ -365,7 +334,7 @@ class MoviesGrid extends HookConsumerWidget {
                               'MoviesGrid: onMovieSelected callback called with movie: ${movie.title} (ID: ${movie.id})');
                           AppRouter.navigateToPage(Routes.detailsView,
                               arguments: {'id': movie.id, 'movie': movie});
-                        },
+                        }
                       ),
                     );
                   },
@@ -480,7 +449,6 @@ class _MoviesGridWidget extends HookConsumerWidget {
   final bool useTMDBAPI;
   final Genre? selectedGenre;
   final Function(Movie movie)? onMovieSelected;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final focusNodes = useMemoized(
@@ -527,27 +495,18 @@ class _MoviesGridWidget extends HookConsumerWidget {
       cacheExtent: 100,
       itemBuilder: (BuildContext context, int index) {
         if (useTMDBAPI) {
-          final moviesAsync =
-              ref.watch(tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
-          log(
-              'MoviesGrid: TMDB API - Watching provider for genre ${selectedGenre?.id ?? 0}, moviesAsync: $moviesAsync');
+          final moviesAsync = ref.watch(tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
           return moviesAsync.when(
             data: (movies) {
-              log(
-                  'MoviesGrid: TMDB API - Got movies data, count: ${movies.length}');
               if (index >= movies.length) {
-                log(
-                    'MoviesGrid: TMDB API - Index $index out of bounds for ${movies.length} movies');
                 return const SizedBox.shrink(); // Hide if index out of bounds
               }
               final movie = movies[index];
-              log(
-                  'MoviesGrid: TMDB API - Movie at index $index: ${movie.title} (ID: ${movie.id})');
-
+              final AsyncValue<Movie> currentMovieAsync = AsyncValue.data(movie);
+              
               return ProviderScope(
                 overrides: [
-                  currentPopularMovieProvider
-                      .overrideWithValue(AsyncValue.data(movie))
+                  currentPopularMovieProvider.overrideWithValue(currentMovieAsync)
                 ],
                 child: MovieTile(
                   autofocus: false,
@@ -558,65 +517,26 @@ class _MoviesGridWidget extends HookConsumerWidget {
                 ),
               );
             },
-            error: (e, stackTrace) {
-              log('MoviesGrid: TMDB API - Error loading movies: $e');
-              return ErrorView(
-                error: e.toString(),
-                onRetry: () {
-                  ref.invalidate(
-                      tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
-                },
-              );
-            },
-            loading: () {
-              log('MoviesGrid: TMDB API - Loading movies...');
-              return const AppLoader();
-            },
+            error: (e, stackTrace) => ErrorView(error: e.toString()),
+            loading: () => const AppLoader(),
           );
         } else {
-          log('MoviesGrid: Non-TMDB API - Loading movie for index $index');
-          final movieAsync =
-              ref.watch(paginatedPopularMoviesProvider(index ~/ 20));
+          final AsyncValue<Movie> currentPopularMovieFromIndex = ref
+              .watch(paginatedPopularMoviesProvider(index ~/ 20))
+              .whenData((pageData) => pageData.results[index % 20]);
 
-          return movieAsync.when(
-            data: (pageData) {
-              if (index % 20 >= pageData.results.length) {
-                log(
-                    'MoviesGrid: Non-TMDB API - Index out of bounds for page data');
-                return const SizedBox.shrink();
-              }
+          return ProviderScope(
+            overrides: [
+              currentPopularMovieProvider
+                  .overrideWithValue(currentPopularMovieFromIndex)
+            ],
+            child: MovieTile(
+              autofocus: false,
+              index: index,
+              focusNode: focusNodes[index],
+              isFocused: isFocused && currentFocusedIndex == index,
 
-              final movie = pageData.results[index % 20];
-              log(
-                  'MoviesGrid: Non-TMDB API - Movie at index $index: ${movie.title} (ID: ${movie.id})');
-
-              return ProviderScope(
-                overrides: [
-                  currentPopularMovieProvider
-                      .overrideWithValue(AsyncValue.data(movie))
-                ],
-                child: MovieTile(
-                  autofocus: false,
-                  index: index,
-                  focusNode: focusNodes[index],
-                  isFocused: isFocused && currentFocusedIndex == index,
-                  onMovieSelected: onMovieSelected,
-                ),
-              );
-            },
-            error: (e, stackTrace) {
-              log('MoviesGrid: Non-TMDB API - Error loading page data: $e');
-              return ErrorView(
-                error: e.toString(),
-                onRetry: () {
-                  ref.invalidate(paginatedPopularMoviesProvider(index ~/ 20));
-                },
-              );
-            },
-            loading: () {
-              log('MoviesGrid: Non-TMDB API - Loading page data...');
-              return const AppLoader();
-            },
+            ),
           );
         }
       },
@@ -652,27 +572,27 @@ List<Element> findAncestors(BuildContext context, [int max = 10]) {
   return ancestors;
 }
 
-void logWidgetTreeAroundFocus() {
+void printWidgetTreeAroundFocus() {
   final focusedNode = FocusManager.instance.primaryFocus;
   final context = focusedNode?.context;
   if (context == null) {
-    log("No focused widget found.");
+    print("No focused widget found.");
     return;
   }
 
   final ancestors = findAncestors(context);
   final descendants = findDescendants(context);
 
-  log("==== 5 Ancestors ====");
+  print("==== 5 Ancestors ====");
   for (var e in ancestors) {
     if (e.widget is MovieTile) {
-      log("Ancestor: ${(e.widget as MovieTile).index}");
+      print("Ancestor: ${(e.widget as MovieTile).index}");
     }
-    log(e.widget.runtimeType.toString());
+    print(e.widget.runtimeType);
   }
 
-  log("==== 5 Descendants ====");
+  print("==== 5 Descendants ====");
   for (var e in descendants) {
-    log(e.widget.runtimeType.toString());
+    print(e.widget.runtimeType);
   }
 }

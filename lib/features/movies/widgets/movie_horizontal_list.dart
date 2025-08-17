@@ -61,7 +61,6 @@ class MovieHorizontalList extends HookConsumerWidget {
                     );
                     return false;
                   }
-                  return true;
 
                 case LogicalKeyboardKey.arrowRight:
                   if (currentMovieIndex.value < currentMovies.length - 1) {
@@ -117,7 +116,6 @@ class MovieHorizontalList extends HookConsumerWidget {
                   return true;
 
                 case LogicalKeyboardKey.select:
-                  return false;
                 case LogicalKeyboardKey.enter:
                   // Handle movie selection (will be handled by MovieTile)
                   return false;

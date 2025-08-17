@@ -77,7 +77,7 @@ class MovieTile extends HookConsumerWidget {
       child: Builder(builder: (context) {
         final bool hasFocus = Focus.of(context).hasPrimaryFocus || isFocused;
         return Container(
-          padding: const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.all(6.0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(5.0),
             // Add focus indicator
@@ -91,11 +91,14 @@ class MovieTile extends HookConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              AspectRatio(
-                aspectRatio: 2 / 3,
+              ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(5),
+                  topRight: Radius.circular(5),
+                ),
                 child: Container(
-                  // height: 250,
-                  // width: double.infinity,
+                  height: 250,
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     boxShadow: [
                       BoxShadow(

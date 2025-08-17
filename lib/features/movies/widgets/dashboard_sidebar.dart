@@ -137,7 +137,21 @@ class DashboardSideBar extends HookConsumerWidget {
                   },
                 ),
                 DrawerItem(
-                  title: context.localisations.movies,
+                  title: 'TMDB ${context.localisations.movies}',
+                  iconData: Icons.movie_outlined,
+                  selectedIconData: Icons.movie,
+                  focusNode: focusNodeMap[SidebarOptions.apiMovies]!,
+                  key: globalKeyMap[SidebarOptions.apiMovies]!,
+                  isSelected:
+                      sidebarState.sidebarOptions == SidebarOptions.apiMovies,
+                  onlyIcon: shouldHide,
+                  onTap: () {
+                    sidebarStateNotifier
+                        .setSidebarOption(SidebarOptions.apiMovies);
+                  },
+                ),
+                DrawerItem(
+                  title: "${context.localisations.movies} V2",
                   // title: AppLocalizations.of(context)!.helloWorld,
                   iconData: Icons.movie_outlined,
                   selectedIconData: Icons.movie,
@@ -331,20 +345,7 @@ class DashboardSideBar extends HookConsumerWidget {
                   onlyIcon: shouldHide,
                   onTap: () {},
                 ),
-                DrawerItem(
-                  title: 'TMDB ${context.localisations.movies}',
-                  iconData: Icons.movie_outlined,
-                  selectedIconData: Icons.movie,
-                  focusNode: focusNodeMap[SidebarOptions.apiMovies]!,
-                  key: globalKeyMap[SidebarOptions.apiMovies]!,
-                  isSelected:
-                      sidebarState.sidebarOptions == SidebarOptions.apiMovies,
-                  onlyIcon: shouldHide,
-                  onTap: () {
-                    sidebarStateNotifier
-                        .setSidebarOption(SidebarOptions.apiMovies);
-                  },
-                ),
+
                 DrawerItem(
                   title: 'API V3 ${context.localisations.movies}',
                   iconData: Icons.movie_outlined,

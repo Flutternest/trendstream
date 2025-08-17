@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 
@@ -93,6 +94,34 @@ class MovieDetailsView extends HookConsumerWidget {
       return null;
     }, [movieDetailsAsync]);
 
+    // State for managing toast visibility
+    final showToast = useState(false);
+    final toastTimer = useRef<Timer?>(null);
+
+    // Show toast when refresh completes
+    useEffect(() {
+      if (movieDetailsAsync.hasValue && !movieDetailsAsync.isLoading) {
+        showToast.value = true;
+
+        // Auto-hide toast after 3 seconds
+        toastTimer.value?.cancel();
+        toastTimer.value = Timer(const Duration(seconds: 3), () {
+          showToast.value = false;
+        });
+      }
+
+      return () {
+        toastTimer.value?.cancel();
+      };
+    }, [movieDetailsAsync]);
+
+    // Clean up timer on dispose
+    useEffect(() {
+      return () {
+        toastTimer.value?.cancel();
+      };
+    }, []);
+
     return KeyboardListener(
       focusNode: FocusNode(),
       onKeyEvent: (event) {
@@ -117,6 +146,7 @@ class MovieDetailsView extends HookConsumerWidget {
               posterContainerHeight,
               initialMovie,
               movieDetailsAsync,
+              showToast.value,
               ref,
               movieId),
           error: (error, stackTrace) {
@@ -130,6 +160,7 @@ class MovieDetailsView extends HookConsumerWidget {
                   posterContainerHeight,
                   initialMovie,
                   movieDetailsAsync,
+                  showToast.value,
                   ref,
                   movieId);
             }
@@ -151,6 +182,7 @@ class MovieDetailsView extends HookConsumerWidget {
                   posterContainerHeight,
                   initialMovie,
                   movieDetailsAsync,
+                  showToast.value,
                   ref,
                   movieId);
             }
@@ -169,620 +201,690 @@ class MovieDetailsView extends HookConsumerWidget {
       double posterContainerHeight,
       Movie? initialMovie,
       AsyncValue<Movie> movieDetailsAsync,
+      bool showToast,
       WidgetRef ref,
       int? movieId) {
-    return Container(
-      decoration: BoxDecoration(
-        image: DecorationImage(
-          image: NetworkImage(
-            "${Configs.largeBaseImagePath}${movie.backdropPath}",
+    return Stack(
+      children: [
+        // Main content
+        Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: NetworkImage(
+                "${Configs.largeBaseImagePath}${movie.backdropPath}",
+              ),
+              fit: BoxFit.cover,
+            ),
           ),
-          fit: BoxFit.cover,
-        ),
-      ),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
-        child: ColoredBox(
-          color: Colors.black.withOpacity(.8),
-          child: SingleChildScrollView(
-            child: FocusTraversalGroup(
-              policy: OrderedTraversalPolicy(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBackButton(context, ref, movieId, movieDetailsAsync),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                    height: posterContainerHeight,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          height: posterContainerHeight,
-                          // width: 250,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(.7),
-                                    blurRadius: 5,
-                                    spreadRadius: 1,
-                                    offset: const Offset(0, 1),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20.0, sigmaY: 20.0),
+            child: ColoredBox(
+              color: Colors.black.withOpacity(.8),
+              child: SingleChildScrollView(
+                child: FocusTraversalGroup(
+                  policy: OrderedTraversalPolicy(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBackButton(
+                          context, ref, movieId, movieDetailsAsync),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 40.0),
+                        height: posterContainerHeight,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              height: posterContainerHeight,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(.7),
+                                        blurRadius: 5,
+                                        spreadRadius: 1,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              child: AppImage(
-                                imageUrl:
-                                    "${Configs.largeBaseImagePath}${movie.posterPath}",
+                                  child: AppImage(
+                                    imageUrl:
+                                        "${Configs.largeBaseImagePath}${movie.posterPath}",
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              FittedBox(
-                                child: Text(
-                                  validString(movie.originalTitle),
-                                  style: const TextStyle(
-                                    fontSize: 24.0,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 5),
-                              if (movie.tagline?.isNotEmpty ?? false)
-                                Text(
-                                  validString(movie.tagline),
-                                  style: const TextStyle(
-                                    fontSize: 14.0,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                              const SizedBox(height: 20),
-                              // Show loading indicator if we're using initial movie data and fetching detailed data
-                              if (initialMovie != null &&
-                                  movieDetailsAsync.isLoading)
-                                Row(
-                                  children: [
-                                    const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        valueColor:
-                                            AlwaysStoppedAnimation<Color>(
-                                                Colors.white),
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  FittedBox(
+                                    child: Text(
+                                      validString(movie.originalTitle ?? initialMovie?.originalTitle ?? initialMovie?.title ?? ""),
+                                      style: const TextStyle(
+                                        fontSize: 24.0,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(width: 8),
+                                  ),
+                                  const SizedBox(height: 5),
+                                  // Show indicator if using initial movie data
+                                  
+                                  const SizedBox(height: 5),
+                                  if (movie.tagline?.isNotEmpty ?? false)
                                     Text(
-                                      'Loading additional details...',
-                                      style: TextStyle(
-                                        fontSize: 12.0,
-                                        color: Colors.grey[400],
+                                      validString(movie.tagline),
+                                      style: const TextStyle(
+                                        fontSize: 14.0,
+                                        color: Colors.white,
                                         fontWeight: FontWeight.w300,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              const SizedBox(height: 20),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                                  const SizedBox(height: 20),
+                                  // Show loading indicator if we're using initial movie data and fetching detailed data
+                                  if (initialMovie != null &&
+                                      movieDetailsAsync.isLoading)
+                                    Row(
+                                      children: [
+                                        const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor:
+                                                AlwaysStoppedAnimation<Color>(
+                                                    Colors.white),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Loading additional details...',
+                                          style: TextStyle(
+                                            fontSize: 12.0,
+                                            color: Colors.grey[400],
+                                            fontWeight: FontWeight.w300,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  const SizedBox(height: 20),
                                   Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
-                                        Icons.star,
-                                        color: Colors.yellow,
-                                        size: 16,
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const Icon(
+                                            Icons.star,
+                                            color: Colors.yellow,
+                                            size: 16,
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            (movie.voteAverage ?? 0.0)
+                                                .toStringAsFixed(2),
+                                            style: const TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            "(${movie.voteCount})",
+                                            style: TextStyle(
+                                              fontSize: 14.0,
+                                              color: Colors.grey[500],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        (movie.voteAverage ?? 0.0)
-                                            .toStringAsFixed(2),
-                                        style: const TextStyle(
-                                          fontSize: 14.0,
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        "(${movie.voteCount})",
-                                        style: TextStyle(
-                                          fontSize: 14.0,
-                                          color: Colors.grey[500],
-                                          fontWeight: FontWeight.w500,
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Text(
+                                    "${(movie.adult ?? false) ? "18+ | " : ""}${movie.genres?.isNotEmpty ?? false ? movie.genres?.map((e) => e.name).join(" / ") : "N/A"} | ${movie.releaseDate?.split("-").first}",
+                                    style: TextStyle(
+                                      fontSize: 14.0,
+                                      color: Colors.grey[500],
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.info_outline,
+                                          color: Colors.grey, size: 14),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          context.localisations
+                                              .overviewTextClickDesc,
+                                          style: const TextStyle(
+                                            color: Colors.grey,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w300,
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                "${(movie.adult ?? false) ? "18+ | " : ""}${movie.genres?.isNotEmpty ?? false ? movie.genres?.map((e) => e.name).join(" / ") : "N/A"} | ${movie.releaseDate?.split("-").first}",
-                                style: TextStyle(
-                                  fontSize: 14.0,
-                                  color: Colors.grey[500],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Row(
-                                children: [
-                                  const Icon(Icons.info_outline,
-                                      color: Colors.grey, size: 14),
-                                  const SizedBox(width: 4),
+                                  verticalSpaceTiny,
                                   Expanded(
-                                    child: Text(
-                                      context
-                                          .localisations.overviewTextClickDesc,
-                                      style: const TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w300,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              verticalSpaceTiny,
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) {
-                                        return AlertDialog(
-                                          backgroundColor: kBackgroundColor,
-                                          title: Text(
-                                            context.localisations.overview,
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.bold),
-                                          ),
-                                          content: SingleChildScrollView(
+                                    child: InkWell(
+                                      onTap: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) {
+                                            return AlertDialog(
+                                              backgroundColor: kBackgroundColor,
+                                              title: Text(
+                                                context.localisations.overview,
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 20,
+                                                    fontWeight:
+                                                        FontWeight.bold),
+                                              ),
+                                              content: SingleChildScrollView(
+                                                child: Text(
+                                                  validString(movie.overview),
+                                                  style: const TextStyle(
+                                                    fontSize: 14.0,
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w300,
+                                                  ),
+                                                ),
+                                              ),
+                                              actions: [
+                                                AppButton(
+                                                  autofocus: true,
+                                                  text: context
+                                                      .localisations.close,
+                                                  onTap: () {
+                                                    Navigator.pop(context);
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Builder(
+                                        builder: (context) {
+                                          final hasPrimaryFocus =
+                                              Focus.of(context).hasPrimaryFocus;
+                                          return Container(
+                                            decoration: hasPrimaryFocus
+                                                ? BoxDecoration(
+                                                    color: kPrimaryAccentColor
+                                                        .withOpacity(.2),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            4),
+                                                  )
+                                                : null,
                                             child: Text(
                                               validString(movie.overview),
                                               style: const TextStyle(
                                                 fontSize: 14.0,
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w300,
+                                                overflow: TextOverflow.fade,
                                               ),
-                                            ),
-                                          ),
-                                          actions: [
-                                            AppButton(
-                                              autofocus: true,
-                                              text: context.localisations.close,
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
-                                  child: Builder(
-                                    builder: (context) {
-                                      final hasPrimaryFocus =
-                                          Focus.of(context).hasPrimaryFocus;
-                                      return Container(
-                                        decoration: hasPrimaryFocus
-                                            ? BoxDecoration(
-                                                color: kPrimaryAccentColor
-                                                    .withOpacity(.2),
-                                                borderRadius:
-                                                    BorderRadius.circular(4),
-                                              )
-                                            : null,
-                                        child: Text(
-                                          validString(movie.overview),
-                                          style: const TextStyle(
-                                            fontSize: 14.0,
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w300,
-                                            overflow: TextOverflow.fade,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              Wrap(
-                                spacing: 20,
-                                runSpacing: 10,
-                                children: [
-                                  ...uniqueMainCrew.value.entries.map((entry) =>
-                                      CreatorItem(
-                                          name: entry.key, job: entry.value)),
-                                ],
-                              ),
-                              verticalSpaceSmall,
-                              Row(
-                                children: [
-                                  AppButton(
-                                    autofocus: true,
-                                    text: context.localisations.watchNow,
-                                    onTap: () async {
-                                      // Use NativePlayerController for video playback
-                                      // For demo purposes, using a sample video URL
-                                      // In a real app, this would come from the movie data or a streaming service
-                                      const List<String> demoVideoUrls = [
-                                        Configs
-                                            .demoVideoUrlMp4, // Try MP4 first for better compatibility
-                                        Configs.demoVideoUrl, // Fallback to MKV
-                                        Configs
-                                            .demoVideoUrlHls, // Fallback to HLS stream
-                                      ];
-
-                                      String? lastError;
-                                      for (final videoUrl in demoVideoUrls) {
-                                        try {
-                                          final controller =
-                                              NativePlayerController(
-                                            NativePlayerControllerArgs(
-                                              loadingOverlay:
-                                                  LoadingOverlay.of(context),
-                                              videoUrl: videoUrl,
                                             ),
                                           );
-                                          await controller.navigateToPlayer();
-                                          return; // Success, exit the loop
-                                        } catch (e) {
-                                          lastError = e.toString();
-                                          // Continue to next URL if this one fails
-                                        }
-                                      }
-
-                                      // If all URLs fail, show error
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                              'Failed to play video. All demo URLs failed. Last error: $lastError'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    },
-                                    prefix: const Icon(
-                                      Icons.play_circle,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  horizontalSpaceRegular,
-                                  // Debug button to show video URLs (remove in production)
-                                  if (kDebugMode)
-                                    AppButton(
-                                      text: 'Debug Video',
-                                      onTap: () {
-                                        final videoUrls = [
-                                          Configs.demoVideoUrlMp4,
-                                          Configs.demoVideoUrl,
-                                          Configs.demoVideoUrlHls,
-                                        ];
-
-                                        showDialog(
-                                          context: context,
-                                          builder: (context) => AlertDialog(
-                                            title:
-                                                const Text('Debug Video URLs'),
-                                            content: Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                    'Available demo video URLs:'),
-                                                const SizedBox(height: 8),
-                                                ...videoUrls.map((url) =>
-                                                    Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              bottom: 4),
-                                                      child: SelectableText(
-                                                        url,
-                                                        style: const TextStyle(
-                                                            fontSize: 12),
-                                                      ),
-                                                    )),
-                                                const SizedBox(height: 8),
-                                                const Text(
-                                                    'Try the Watch Now button to test video playback.'),
-                                              ],
-                                            ),
-                                            actions: [
-                                              AppButton(
-                                                text: 'Close',
-                                                onTap: () =>
-                                                    Navigator.pop(context),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                      prefix: const Icon(
-                                        Icons.bug_report,
-                                        color: Colors.white,
+                                        },
                                       ),
                                     ),
-                                  // Remove duplicate refresh button since it's now in the top navigation
-                                  movieVideosAsync.when(
-                                    data: (videos) {
-                                      final hasTrailer = videos.any((element) =>
-                                          element.type == "Trailer" &&
-                                          (element.official ?? false) &&
-                                          element.site == "YouTube");
-
-                                      return AppButton(
-                                        text:
-                                            context.localisations.watchTrailer,
-                                        onTap: !hasTrailer
-                                            ? null
-                                            : () async {
-                                                final firstTrailer =
-                                                    videos.firstWhere(
-                                                  (element) {
-                                                    return element.type ==
-                                                            "Trailer" &&
-                                                        (element.official ??
-                                                            false) &&
-                                                        element.site ==
-                                                            "YouTube";
-                                                  },
-                                                );
-
-                                                // if (!await launchUrl(Uri.parse(
-                                                //     "https://youtube.com/watch?v=${firstTrailer.key}"))) {
-                                                //   AppUtils.showSnackBar(context,
-                                                //       message:
-                                                //           "This TV does not support opening URLs");
-                                                // }
-
-                                                const platform = MethodChannel(
-                                                    'com.example.latest_movies/channel');
-                                                await platform.invokeMethod(
-                                                    "navigateToYoutubePlayer", {
-                                                  'video_id': firstTrailer.key
-                                                });
-
-                                                // AppRouter.navigateToPage(
-                                                //     Routes
-                                                //         .youtubePlayerView,
-                                                //     arguments:
-                                                //         firstTrailer.key);
-                                              },
-                                      );
-                                    },
-                                    loading: () => AppButton(
-                                        text:
-                                            context.localisations.watchTrailer,
-                                        isLoading: true,
-                                        onTap: null),
-                                    error: (e, s) => const SizedBox.shrink(),
                                   ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        verticalSpaceMedium,
-                        Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                context.localisations.cast,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              verticalSpaceMedium,
-                              Builder(builder: (context) {
-                                // Get the screen width
-                                double screenWidth =
-                                    MediaQuery.of(context).size.width;
-                                double itemWidth =
-                                    150; // Replace this with the actual width of your items
-
-                                int itemCount = min(
-                                    (movie.credits?.cast?.length ?? 0) + 1,
-                                    screenWidth ~/ itemWidth);
-
-                                return SizedBox(
-                                  height: 230,
-                                  child: Row(
-                                    children: List.generate(
-                                      itemCount,
-                                      (index) {
-                                        return Builder(
-                                          builder: (context) {
-                                            if (index == itemCount - 1) {
-                                              return Padding(
-                                                padding:
-                                                    const EdgeInsets.all(16.0),
-                                                child: TextButton.icon(
-                                                    onPressed: () {
-                                                      AppRouter.navigateToPage(
-                                                          Routes
-                                                              .allMovieCastAndCrew,
-                                                          arguments: AllClassAndCrewArgs(
-                                                              credits: movie
-                                                                  .credits!,
-                                                              backdropPath: movie
-                                                                  .backdropPath!));
-                                                    },
-                                                    style: TextButton.styleFrom(
-                                                      foregroundColor:
-                                                          Colors.white,
-                                                    ),
-                                                    icon: const Icon(
-                                                        Icons.arrow_forward),
-                                                    label: Text(context
-                                                        .localisations
-                                                        .viewAll)),
-                                              );
-                                            }
-                                            final cast =
-                                                movie.credits?.cast?[index];
-                                            return CastTileV1(
-                                                name: cast?.name,
-                                                character: cast?.character,
-                                                profilePath: cast?.profilePath);
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                );
-                              }),
-
-                              // SizedBox(
-                              //   height: 220,
-                              //   child: ListView.builder(
-                              //     scrollDirection: Axis.horizontal,
-                              //     itemCount: min(
-                              //             movie.credits?.cast?.length ?? 10,
-                              //             10) +
-                              //         1,
-                              //     clipBehavior: Clip.none,
-                              //     itemBuilder: (context, index) {
-                              //       //if item is last
-                              //       if (index ==
-                              //           min(
-                              //               movie.credits?.cast?.length ??
-                              //                   10,
-                              //               10)) {
-                              //         return Padding(
-                              //           padding: const EdgeInsets.all(16.0),
-                              //           child: TextButton.icon(
-                              //               onPressed: () {
-                              //                 AppRouter.navigateToPage(
-                              //                     Routes
-                              //                         .allMovieCastAndCrew,
-                              //                     arguments:
-                              //                         AllClassAndCrewArgs(
-                              //                             credits: movie
-                              //                                 .credits!,
-                              //                             backdropPath: movie
-                              //                                 .backdropPath!));
-                              //               },
-                              //               style: TextButton.styleFrom(
-                              //                 foregroundColor: Colors.white,
-                              //               ),
-                              //               icon: const Icon(
-                              //                   Icons.arrow_forward),
-                              //               label: const Text("View all")),
-                              //         );
-                              //       }
-                              //       final cast =
-                              //           movie.credits?.cast?[index];
-                              //       return CastTile(
-                              //           name: cast?.name,
-                              //           character: cast?.character,
-                              //           profilePath: cast?.profilePath);
-                              //     },
-                              //   ),
-                              // ),
-                            ]),
-                        verticalSpaceMedium,
-                        InkWell(
-                          onTap: () {},
-                          child: Builder(builder: (context) {
-                            final hasFocus = Focus.of(context).hasPrimaryFocus;
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  context.localisations.stats,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                                verticalSpaceMedium,
-                                Container(
-                                  padding: const EdgeInsets.all(14.0),
-                                  decoration: BoxDecoration(
-                                    color: hasFocus
-                                        ? kPrimaryAccentColor.withOpacity(.5)
-                                        : kPrimaryAccentColor.withOpacity(.2),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  width: double.infinity,
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                  const SizedBox(height: 20),
+                                  Wrap(
+                                    spacing: 20,
+                                    runSpacing: 10,
                                     children: [
-                                      StatsItem(
-                                        stat: context.localisations.budget,
-                                        value: movie.budget != null
-                                            ? "\$${NumberFormat.currency(name: "").format(movie.budget)}"
-                                            : "N/A",
+                                      ...uniqueMainCrew.value.entries.map(
+                                          (entry) => CreatorItem(
+                                              name: entry.key,
+                                              job: entry.value)),
+                                    ],
+                                  ),
+                                  verticalSpaceSmall,
+                                  Row(
+                                    children: [
+                                      AppButton(
+                                        autofocus: true,
+                                        text: context.localisations.watchNow,
+                                        onTap: () async {
+                                          // Use NativePlayerController for video playback
+                                          // For demo purposes, using a sample video URL
+                                          // In a real app, this would come from the movie data or a streaming service
+                                          const List<String> demoVideoUrls = [
+                                            Configs
+                                                .demoVideoUrlMp4, // Try MP4 first for better compatibility
+                                            Configs
+                                                .demoVideoUrl, // Fallback to MKV
+                                            Configs
+                                                .demoVideoUrlHls, // Fallback to HLS stream
+                                          ];
+
+                                          String? lastError;
+                                          for (final videoUrl
+                                              in demoVideoUrls) {
+                                            try {
+                                              final controller =
+                                                  NativePlayerController(
+                                                NativePlayerControllerArgs(
+                                                  loadingOverlay:
+                                                      LoadingOverlay.of(
+                                                          context),
+                                                  videoUrl: videoUrl,
+                                                ),
+                                              );
+                                              await controller
+                                                  .navigateToPlayer();
+                                              return; // Success, exit the loop
+                                            } catch (e) {
+                                              lastError = e.toString();
+                                              // Continue to next URL if this one fails
+                                            }
+                                          }
+
+                                          // If all URLs fail, show error
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                  'Failed to play video. All demo URLs failed. Last error: $lastError'),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                        },
+                                        prefix: const Icon(
+                                          Icons.play_circle,
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                      verticalSpaceRegular,
-                                      StatsItem(
-                                        stat: context.localisations.revenue,
-                                        value: movie.revenue != null
-                                            ? "\$${NumberFormat.currency(name: "").format(movie.revenue ?? 0)}"
-                                            : "N/A",
-                                      ),
-                                      verticalSpaceRegular,
-                                      StatsItem(
-                                        stat:
-                                            context.localisations.originalLang,
-                                        value: movie.spokenLanguages
-                                                ?.firstWhere(
-                                                    (element) =>
-                                                        element.iso6391 ==
-                                                        movie.originalLanguage,
-                                                    orElse: () =>
-                                                        const SpokenLanguage(
-                                                            name: "English"))
-                                                .name ??
-                                            "N/A",
+                                      horizontalSpaceRegular,
+                                      // Debug button to show video URLs (remove in production)
+                                      if (kDebugMode)
+                                        AppButton(
+                                          text: 'Debug Video',
+                                          onTap: () {
+                                            final videoUrls = [
+                                              Configs.demoVideoUrlMp4,
+                                              Configs.demoVideoUrl,
+                                              Configs.demoVideoUrlHls,
+                                            ];
+
+                                            showDialog(
+                                              context: context,
+                                              builder: (context) => AlertDialog(
+                                                title: const Text(
+                                                    'Debug Video URLs'),
+                                                content: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    const Text(
+                                                        'Available demo video URLs:'),
+                                                    const SizedBox(height: 8),
+                                                    ...videoUrls.map((url) =>
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .only(
+                                                                  bottom: 4),
+                                                          child: SelectableText(
+                                                            url,
+                                                            style:
+                                                                const TextStyle(
+                                                                    fontSize:
+                                                                        12),
+                                                          ),
+                                                        )),
+                                                    const SizedBox(height: 8),
+                                                    const Text(
+                                                        'Try the Watch Now button to test video playback.'),
+                                                  ],
+                                                ),
+                                                actions: [
+                                                  AppButton(
+                                                    text: 'Close',
+                                                    onTap: () =>
+                                                        Navigator.pop(context),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                          prefix: const Icon(
+                                            Icons.bug_report,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      // Remove duplicate refresh button since it's now in the top navigation
+                                      movieVideosAsync.when(
+                                        data: (videos) {
+                                          final hasTrailer = videos.any(
+                                              (element) =>
+                                                  element.type == "Trailer" &&
+                                                  (element.official ?? false) &&
+                                                  element.site == "YouTube");
+
+                                          return AppButton(
+                                            text: context
+                                                .localisations.watchTrailer,
+                                            onTap: !hasTrailer
+                                                ? null
+                                                : () async {
+                                                    final firstTrailer =
+                                                        videos.firstWhere(
+                                                      (element) {
+                                                        return element.type ==
+                                                                "Trailer" &&
+                                                            (element.official ??
+                                                                false) &&
+                                                            element.site ==
+                                                                "YouTube";
+                                                      },
+                                                    );
+
+                                                    const platform = MethodChannel(
+                                                        'com.example.latest_movies/channel');
+                                                    await platform.invokeMethod(
+                                                        "navigateToYoutubePlayer",
+                                                        {
+                                                          'video_id':
+                                                              firstTrailer.key
+                                                        });
+                                                  },
+                                          );
+                                        },
+                                        loading: () => AppButton(
+                                            text: context
+                                                .localisations.watchTrailer,
+                                            isLoading: true,
+                                            onTap: null),
+                                        error: (e, s) =>
+                                            const SizedBox.shrink(),
                                       ),
                                     ],
                                   ),
-                                ),
-                                verticalSpaceMedium
-                              ],
-                            );
-                          }),
+                                ],
+                              ),
+                            )
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            verticalSpaceMedium,
+                            Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    context.localisations.cast,
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  verticalSpaceMedium,
+                                  Builder(builder: (context) {
+                                    // Get the screen width
+                                    double screenWidth =
+                                        MediaQuery.of(context).size.width;
+                                    double itemWidth =
+                                        150; // Replace this with the actual width of your items
+
+                                    int itemCount = min(
+                                        (movie.credits?.cast?.length ?? 0) + 1,
+                                        screenWidth ~/ itemWidth);
+
+                                    return SizedBox(
+                                      height: 230,
+                                      child: Row(
+                                        children: List.generate(
+                                          itemCount,
+                                          (index) {
+                                            return Builder(
+                                              builder: (context) {
+                                                if (index == itemCount - 1) {
+                                                  return Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
+                                                    child: TextButton.icon(
+                                                        onPressed: () {
+                                                          AppRouter.navigateToPage(
+                                                              Routes
+                                                                  .allMovieCastAndCrew,
+                                                              arguments: AllClassAndCrewArgs(
+                                                                  credits: movie
+                                                                      .credits!,
+                                                                  backdropPath:
+                                                                      movie
+                                                                          .backdropPath!));
+                                                        },
+                                                        style: TextButton
+                                                            .styleFrom(
+                                                          foregroundColor:
+                                                              Colors.white,
+                                                        ),
+                                                        icon: const Icon(Icons
+                                                            .arrow_forward),
+                                                        label: Text(context
+                                                            .localisations
+                                                            .viewAll)),
+                                                  );
+                                                }
+                                                final cast =
+                                                    movie.credits?.cast?[index];
+                                                return CastTileV1(
+                                                    name: cast?.name,
+                                                    character: cast?.character,
+                                                    profilePath:
+                                                        cast?.profilePath);
+                                              },
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    );
+                                  }),
+
+                                  // SizedBox(
+                                  //   height: 220,
+                                  //   child: ListView.builder(
+                                  //     scrollDirection: Axis.horizontal,
+                                  //     itemCount: min(
+                                  //             movie.credits?.cast?.length ?? 10,
+                                  //             10) +
+                                  //         1,
+                                  //     clipBehavior: Clip.none,
+                                  //     itemBuilder: (context, index) {
+                                  //       //if item is last
+                                  //       if (index ==
+                                  //           min(
+                                  //               movie.credits?.cast?.length ??
+                                  //                   10,
+                                  //               10)) {
+                                  //         return Padding(
+                                  //           padding: const EdgeInsets.all(16.0),
+                                  //           child: TextButton.icon(
+                                  //               onPressed: () {
+                                  //                 AppRouter.navigateToPage(
+                                  //                     Routes
+                                  //                         .allMovieCastAndCrew,
+                                  //                     arguments:
+                                  //                         AllClassAndCrewArgs(
+                                  //                             credits: movie
+                                  //                                 .credits!,
+                                  //                             backdropPath: movie
+                                  //                                 .backdropPath!));
+                                  //               },
+                                  //               style: TextButton.styleFrom(
+                                  //                 foregroundColor: Colors.white,
+                                  //               ),
+                                  //               icon: const Icon(
+                                  //                   Icons.arrow_forward),
+                                  //               label: const Text("View all")),
+                                  //         );
+                                  //       }
+                                  //       final cast =
+                                  //           movie.credits?.cast?[index];
+                                  //       return CastTile(
+                                  //           name: cast?.name,
+                                  //           character: cast?.character,
+                                  //           profilePath: cast?.profilePath);
+                                  //     },
+                                  //   ),
+                                  // ),
+                                ]),
+                            verticalSpaceMedium,
+                            InkWell(
+                              onTap: () {},
+                              child: Builder(builder: (context) {
+                                final hasFocus =
+                                    Focus.of(context).hasPrimaryFocus;
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      context.localisations.stats,
+                                      style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    verticalSpaceMedium,
+                                    Container(
+                                      padding: const EdgeInsets.all(14.0),
+                                      decoration: BoxDecoration(
+                                        color: hasFocus
+                                            ? kPrimaryAccentColor
+                                                .withOpacity(.5)
+                                            : kPrimaryAccentColor
+                                                .withOpacity(.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      width: double.infinity,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          StatsItem(
+                                            stat: context.localisations.budget,
+                                            value: movie.budget != null
+                                                ? "\$${NumberFormat.currency(name: "").format(movie.budget)}"
+                                                : "N/A",
+                                          ),
+                                          verticalSpaceRegular,
+                                          StatsItem(
+                                            stat: context.localisations.revenue,
+                                            value: movie.revenue != null
+                                                ? "\$${NumberFormat.currency(name: "").format(movie.revenue ?? 0)}"
+                                                : "N/A",
+                                          ),
+                                          verticalSpaceRegular,
+                                          StatsItem(
+                                            stat: context
+                                                .localisations.originalLang,
+                                            value: movie.spokenLanguages
+                                                    ?.firstWhere(
+                                                        (element) =>
+                                                            element.iso6391 ==
+                                                            movie
+                                                                .originalLanguage,
+                                                        orElse: () =>
+                                                            const SpokenLanguage(
+                                                                name:
+                                                                    "English"))
+                                                    .name ??
+                                                "N/A",
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    verticalSpaceMedium
+                                  ],
+                                );
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
         ),
-      ),
+        // Toast notification overlay
+        if (showToast)
+          Positioned(
+            top: 16,
+            right: 16,
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 300),
+              tween: Tween(begin: 0.0, end: 1.0),
+              builder: (context, opacity, child) {
+                return Opacity(
+                  opacity: opacity,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Updated',
+                          style: TextStyle(
+                            fontSize: 12.0,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 
@@ -825,35 +927,6 @@ class MovieDetailsView extends HookConsumerWidget {
                     ),
             ),
           ),
-          // Show success indicator when refresh completes
-          if (movieDetailsAsync.hasValue && !movieDetailsAsync.isLoading)
-            Container(
-              margin: const EdgeInsets.only(left: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    'Updated',
-                    style: TextStyle(
-                      fontSize: 12.0,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );

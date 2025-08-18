@@ -134,7 +134,7 @@ class MovieHorizontalList extends HookConsumerWidget {
             });
           }
           return null;
-        }, []);
+        }, const []);
 
         return Focus(
           onKeyEvent: (node, event) => handleKeyPress(event)

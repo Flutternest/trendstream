@@ -1,11 +1,8 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/genre_selector.dart';
 import 'package:latest_movies/core/utilities/app_logger.dart';
 import 'package:latest_movies/features/movies/controllers/genre_list_provider.dart';
@@ -239,11 +236,13 @@ class MoviesGrid extends HookConsumerWidget {
                       }
                     });
                     moviesGridFocus.requestFocus();
+                    return false;
                   } else if (selectedSection.value == Sections.movies) {
                     // Navigate to movie detail (handled by MovieTile)
                     final totalMovies = popularMoviesCount.asData?.value ?? 0;
                     if (currentMovieIndex.value < totalMovies) {
                       // The navigation will be handled by the MovieTile's onTap
+                      return false;
                     }
                   }
                   return true;
@@ -328,13 +327,6 @@ class MoviesGrid extends HookConsumerWidget {
                         scrollController: moviesScrollController,
                         useTMDBAPI: useTMDBAPI,
                         selectedGenre: selectedGenre,
-                        onMovieSelected: (movie) {
-                          // Navigate to movie details
-                          log(
-                              'MoviesGrid: onMovieSelected callback called with movie: ${movie.title} (ID: ${movie.id})');
-                          AppRouter.navigateToPage(Routes.detailsView,
-                              arguments: {'id': movie.id, 'movie': movie});
-                        }
                       ),
                     );
                   },
@@ -439,7 +431,7 @@ class _MoviesGridWidget extends HookConsumerWidget {
     required this.scrollController,
     required this.useTMDBAPI,
     required this.selectedGenre,
-    required this.onMovieSelected,
+    this.onMovieSelected,
   });
 
   final int totalItems;
@@ -495,18 +487,21 @@ class _MoviesGridWidget extends HookConsumerWidget {
       cacheExtent: 100,
       itemBuilder: (BuildContext context, int index) {
         if (useTMDBAPI) {
-          final moviesAsync = ref.watch(tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
+          final moviesAsync =
+              ref.watch(tmdbMoviesByGenreProvider(selectedGenre?.id ?? 0));
           return moviesAsync.when(
             data: (movies) {
               if (index >= movies.length) {
                 return const SizedBox.shrink(); // Hide if index out of bounds
               }
               final movie = movies[index];
-              final AsyncValue<Movie> currentMovieAsync = AsyncValue.data(movie);
-              
+              final AsyncValue<Movie> currentMovieAsync =
+                  AsyncValue.data(movie);
+
               return ProviderScope(
                 overrides: [
-                  currentPopularMovieProvider.overrideWithValue(currentMovieAsync)
+                  currentPopularMovieProvider
+                      .overrideWithValue(currentMovieAsync)
                 ],
                 child: MovieTile(
                   autofocus: false,
@@ -535,7 +530,6 @@ class _MoviesGridWidget extends HookConsumerWidget {
               index: index,
               focusNode: focusNodes[index],
               isFocused: isFocused && currentFocusedIndex == index,
-
             ),
           );
         }

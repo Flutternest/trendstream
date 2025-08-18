@@ -57,10 +57,14 @@ class MovieDetailsView extends HookConsumerWidget {
     // States
     final uniqueMainCrew = useState(<String, String>{});
 
+    final watchNowFocusNode = useFocusNode();
+
     // Function to run some code after movie is fetched. This will only be called once the movie is changed and not on every build method
     useEffect(() {
+      watchNowFocusNode.requestFocus();
       movieDetailsAsync.whenData((movie) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
+          watchNowFocusNode.requestFocus();
           final mainCrew = movie.credits?.crew
                   ?.where((c) =>
                       c.job == "Director" ||
@@ -120,7 +124,7 @@ class MovieDetailsView extends HookConsumerWidget {
       return () {
         toastTimer.value?.cancel();
       };
-    }, []);
+    }, const []);
 
     return KeyboardListener(
       focusNode: FocusNode(),
@@ -148,7 +152,8 @@ class MovieDetailsView extends HookConsumerWidget {
               movieDetailsAsync,
               showToast.value,
               ref,
-              movieId),
+              movieId,
+              watchNowFocusNode),
           error: (error, stackTrace) {
             // If we have initial movie data, show it while retrying
             if (initialMovie != null) {
@@ -162,7 +167,8 @@ class MovieDetailsView extends HookConsumerWidget {
                   movieDetailsAsync,
                   showToast.value,
                   ref,
-                  movieId);
+                  movieId,
+                  watchNowFocusNode);
             }
             return ErrorView(
               error: error.toString(),
@@ -184,7 +190,8 @@ class MovieDetailsView extends HookConsumerWidget {
                   movieDetailsAsync,
                   showToast.value,
                   ref,
-                  movieId);
+                  movieId,
+                  watchNowFocusNode);
             }
             return const AppLoader();
           },
@@ -203,7 +210,8 @@ class MovieDetailsView extends HookConsumerWidget {
       AsyncValue<Movie> movieDetailsAsync,
       bool showToast,
       WidgetRef ref,
-      int? movieId) {
+      int? movieId,
+      FocusNode watchNowFocusNode) {
     return Stack(
       children: [
         // Main content
@@ -263,7 +271,10 @@ class MovieDetailsView extends HookConsumerWidget {
                                 children: [
                                   FittedBox(
                                     child: Text(
-                                      validString(movie.originalTitle ?? initialMovie?.originalTitle ?? initialMovie?.title ?? ""),
+                                      validString(movie.originalTitle ??
+                                          initialMovie?.originalTitle ??
+                                          initialMovie?.title ??
+                                          ""),
                                       style: const TextStyle(
                                         fontSize: 24.0,
                                         color: Colors.white,
@@ -273,7 +284,7 @@ class MovieDetailsView extends HookConsumerWidget {
                                   ),
                                   const SizedBox(height: 5),
                                   // Show indicator if using initial movie data
-                                  
+
                                   const SizedBox(height: 5),
                                   if (movie.tagline?.isNotEmpty ?? false)
                                     Text(
@@ -461,6 +472,7 @@ class MovieDetailsView extends HookConsumerWidget {
                                     children: [
                                       AppButton(
                                         autofocus: true,
+                                        focusNode: watchNowFocusNode,
                                         text: context.localisations.watchNow,
                                         onTap: () async {
                                           // Use NativePlayerController for video playback

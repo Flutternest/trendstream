@@ -27,7 +27,7 @@ class CacheInterceptor implements Interceptor {
 
   @override
   void onError(DioError err, ErrorInterceptorHandler handler) {
-    log('❌ ❌ ❌ Dio Error!');
+    log('❌ ❌ ❌ Dio Error! -$err');
     log('❌ ❌ ❌ Url: ${err.requestOptions.uri}');
     log('❌ ❌ ❌ ${err.stackTrace}');
     log('❌ ❌ ❌ Response Errors: ${err.response?.data}');

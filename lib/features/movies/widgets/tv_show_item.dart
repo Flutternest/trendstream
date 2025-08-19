@@ -1,15 +1,14 @@
+import "package:flutter/material.dart";
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
+import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/features/movies/controllers/tv_shows_provider.dart';
 import 'package:latest_movies/features/movies/models/tv_show/tv_show.dart';
 
 import '../../../../core/utilities/design_utility.dart';
-import "package:flutter/material.dart";
-
 import '../../../core/config/config.dart';
-import 'package:latest_movies/core/router/router.dart';
 import '../../../core/shared_widgets/image.dart';
 
 class TvShowTile extends HookConsumerWidget {
@@ -93,6 +92,13 @@ class RawTvShowItem extends StatelessWidget {
                 ),
               ),
               verticalSpaceRegular,
+              Text(validString(show.name),
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: hasFocus ? Colors.white : Colors.grey[700],
+                      fontWeight:
+                          hasFocus ? FontWeight.w700 : FontWeight.w600)),
+              const SizedBox(height: 5),
               Text(
                 validString(
                     show.firstAirDate != null && show.firstAirDate!.isNotEmpty

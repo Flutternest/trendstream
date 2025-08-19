@@ -90,6 +90,37 @@ public class MiniPlayerView extends FrameLayout {
         exoPlayer.release();
     }
 
+    // Control methods for method channel
+    public void play() {
+        if (exoPlayer != null) {
+            exoPlayer.play();
+        }
+    }
+
+    public void pause() {
+        if (exoPlayer != null) {
+            exoPlayer.pause();
+        }
+    }
+
+    public void seekTo(long positionMs) {
+        if (exoPlayer != null) {
+            exoPlayer.seekTo(positionMs);
+        }
+    }
+
+    public boolean isPlaying() {
+        return exoPlayer != null && exoPlayer.isPlaying();
+    }
+
+    public long getDuration() {
+        return exoPlayer != null ? exoPlayer.getDuration() : 0;
+    }
+
+    public long getCurrentPosition() {
+        return exoPlayer != null ? exoPlayer.getCurrentPosition() : 0;
+    }
+
 
 
 }

@@ -155,6 +155,30 @@ class AppRouter {
           settings: settings,
           fullscreenDialog: false,
         );
+      case Routes.fullScreenMiniPlayer:
+        return PageRouteBuilder<dynamic>(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              FullScreenMiniPlayerScreen(
+            videoUrl: settings.arguments as String,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(0.0, 1.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOutCubic;
+
+            var tween =
+                Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            var offsetAnimation = animation.drive(tween);
+
+            return SlideTransition(
+              position: offsetAnimation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+          settings: settings,
+          fullscreenDialog: true,
+        );
       default:
         return null;
     }

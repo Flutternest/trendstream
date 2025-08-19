@@ -24,6 +24,7 @@ class Routes {
   static const String tvShowSeasonsV3 = "/tv-show-seasons-v3";
   static const String allMovieCastAndCrew = "/all-movie-cast-and-crew";
   static const String allMovieCastAndCrewV3 = "/all-movie-cast-and-crew-v3";
+  static const String fullScreenMiniPlayer = "/full-screen-mini-player";
 
   static const String settings = "/settings";
 }

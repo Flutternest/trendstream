@@ -12,8 +12,15 @@ import 'package:latest_movies/features/movies/controllers/native_player_controll
 
 class MiniPlayerWidget extends HookConsumerWidget {
   final String videoUrl;
+  final VoidCallback? onTap;
+  final String? heroTag;
 
-  const MiniPlayerWidget({super.key, required this.videoUrl});
+  const MiniPlayerWidget({
+    super.key,
+    required this.videoUrl,
+    this.onTap,
+    this.heroTag,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,12 +35,17 @@ class MiniPlayerWidget extends HookConsumerWidget {
       onKeyEvent: (node, event) {
         if (event.logicalKey == LogicalKeyboardKey.select ||
             event.logicalKey == LogicalKeyboardKey.enter) {
-          ref
-              .read(nativePlayerCtrlProvider(NativePlayerControllerArgs(
-                loadingOverlay: LoadingOverlay.of(context),
-                videoUrl: videoUrl,
-              )))
-              .navigateToPlayer();
+          // Call onTap callback if provided, otherwise use default behavior
+          if (onTap != null) {
+            onTap!();
+          } else {
+            ref
+                .read(nativePlayerCtrlProvider(NativePlayerControllerArgs(
+                  loadingOverlay: LoadingOverlay.of(context),
+                  videoUrl: videoUrl,
+                )))
+                .navigateToPlayer();
+          }
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
@@ -46,33 +58,68 @@ class MiniPlayerWidget extends HookConsumerWidget {
           ),
         ),
         padding: const EdgeInsets.all(2),
-        child: PlatformViewLink(
-          viewType: 'mini-player-view',
-          surfaceFactory: (context, controller) {
-            return AndroidViewSurface(
-              controller: controller as AndroidViewController,
-              gestureRecognizers: const <Factory<
-                  OneSequenceGestureRecognizer>>{},
-              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-            );
-          },
-          onCreatePlatformView: (params) {
-            final controller = PlatformViewsService.initSurfaceAndroidView(
-              id: params.id,
-              viewType: 'mini-player-view',
-              layoutDirection: TextDirection.ltr,
-              creationParams: {'videoUrl': videoUrl},
-              creationParamsCodec: const StandardMessageCodec(),
-              onFocus: () {
-                log("MiniPlayer: onFocus called from Flutter");
-              },
-            )
-              ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
-              ..create();
+        child: heroTag != null
+            ? Hero(
+                tag: heroTag!,
+                child: PlatformViewLink(
+                  viewType: 'mini-player-view',
+                  surfaceFactory: (context, controller) {
+                    return AndroidViewSurface(
+                      controller: controller as AndroidViewController,
+                      gestureRecognizers: const <Factory<
+                          OneSequenceGestureRecognizer>>{},
+                      hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                    );
+                  },
+                  onCreatePlatformView: (params) {
+                    final controller =
+                        PlatformViewsService.initSurfaceAndroidView(
+                      id: params.id,
+                      viewType: 'mini-player-view',
+                      layoutDirection: TextDirection.ltr,
+                      creationParams: {'videoUrl': videoUrl},
+                      creationParamsCodec: const StandardMessageCodec(),
+                      onFocus: () {
+                        log("MiniPlayer: onFocus called from Flutter");
+                      },
+                    )
+                          ..addOnPlatformViewCreatedListener(
+                              params.onPlatformViewCreated)
+                          ..create();
 
-            return controller;
-          },
-        ),
+                    return controller;
+                  },
+                ),
+              )
+            : PlatformViewLink(
+                viewType: 'mini-player-view',
+                surfaceFactory: (context, controller) {
+                  return AndroidViewSurface(
+                    controller: controller as AndroidViewController,
+                    gestureRecognizers: const <Factory<
+                        OneSequenceGestureRecognizer>>{},
+                    hitTestBehavior: PlatformViewHitTestBehavior.opaque,
+                  );
+                },
+                onCreatePlatformView: (params) {
+                  final controller =
+                      PlatformViewsService.initSurfaceAndroidView(
+                    id: params.id,
+                    viewType: 'mini-player-view',
+                    layoutDirection: TextDirection.ltr,
+                    creationParams: {'videoUrl': videoUrl},
+                    creationParamsCodec: const StandardMessageCodec(),
+                    onFocus: () {
+                      log("MiniPlayer: onFocus called from Flutter");
+                    },
+                  )
+                        ..addOnPlatformViewCreatedListener(
+                            params.onPlatformViewCreated)
+                        ..create();
+
+                  return controller;
+                },
+              ),
       ),
     );
   }

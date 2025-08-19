@@ -2,15 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latest_movies/core/constants/colors.dart';
+import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/shared_widgets/mini_player_widget.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
 import 'package:latest_movies/features/sports/controllers/current_focused_program_controller.dart';
 
-class CurrentSportsDetails extends ConsumerWidget {
+class CurrentSportsDetails extends ConsumerStatefulWidget {
   const CurrentSportsDetails({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CurrentSportsDetails> createState() =>
+      _CurrentSportsDetailsState();
+}
+
+class _CurrentSportsDetailsState extends ConsumerState<CurrentSportsDetails> {
+  @override
+  Widget build(BuildContext context) {
     final focusedEvent = ref.watch(currentFocusedEventController);
 
     if (focusedEvent == null) {
@@ -58,13 +65,21 @@ class CurrentSportsDetails extends ConsumerWidget {
           ),
         ),
         const Spacer(),
-        const SizedBox(
+        SizedBox(
           height: 150,
           child: AspectRatio(
             aspectRatio: 16 / 9,
             child: MiniPlayerWidget(
               videoUrl:
                   'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+              heroTag: 'mini-player-hero',
+              onTap: () {
+                AppRouter.navigateToPage(
+                  Routes.fullScreenMiniPlayer,
+                  arguments:
+                      'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+                );
+              },
             ),
           ),
         ),

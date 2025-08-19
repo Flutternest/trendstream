@@ -5,6 +5,7 @@ import android.view.View;
 
 import com.egeniq.androidtvprogramguide.miniplayer.MiniPlayerView;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import io.flutter.plugin.common.BinaryMessenger;
@@ -23,7 +24,42 @@ public class MiniPlayerPlatformView implements PlatformView {
 
 
         methodChannel.setMethodCallHandler((call, result) -> {
-            result.notImplemented();
+            switch (call.method) {
+                case "play":
+                    miniPlayerView.play();
+                    result.success(true);
+                    break;
+                case "pause":
+                    miniPlayerView.pause();
+                    result.success(true);
+                    break;
+                case "seekTo":
+                    if (call.arguments instanceof Map) {
+                        Map<String, Object> seekArgs = (Map<String, Object>) call.arguments;
+                        Integer position = (Integer) seekArgs.get("position");
+                        if (position != null) {
+                            miniPlayerView.seekTo(position);
+                            result.success(true);
+                        } else {
+                            result.error("INVALID_ARGUMENT", "Position is required", null);
+                        }
+                    } else {
+                        result.error("INVALID_ARGUMENT", "Arguments must be a Map", null);
+                    }
+                    break;
+                case "getPlayerState":
+                    Map<String, Object> state = new HashMap<>();
+                    state.put("isPlaying", miniPlayerView.isPlaying());
+                    state.put("duration", miniPlayerView.getDuration());
+                    result.success(state);
+                    break;
+                case "getCurrentPosition":
+                    result.success(miniPlayerView.getCurrentPosition());
+                    break;
+                default:
+                    result.notImplemented();
+                    break;
+            }
         });
 
         // Set initial video URL if passed

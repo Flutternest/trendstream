@@ -28,7 +28,7 @@ class CurrentSportsDetails extends ConsumerWidget {
             aspectRatio: 16 / 9,
             child: Image.network(
               focusedEvent.poster!,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
             ),
           ),
         ),

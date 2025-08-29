@@ -57,7 +57,6 @@ class CurrentSportsDetails extends ConsumerWidget {
             ],
           ),
         ),
-        const Spacer(),
         const SizedBox(
           height: 150,
           child: AspectRatio(

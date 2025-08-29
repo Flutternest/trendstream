@@ -9,7 +9,9 @@ import 'package:latest_movies/core/data/dummy_data.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
+import 'package:latest_movies/features/movies/controllers/movie_search_controller.dart';
 import 'package:latest_movies/features/movies/controllers/search_movie_count_provider.dart';
+import 'package:latest_movies/features/movies/controllers/search_paginated_movies_provider.dart';
 
 import '../../../core/shared_widgets/app_loader.dart';
 import '../../../core/utilities/responsive.dart';
@@ -197,16 +199,16 @@ class _SearchGridWidget extends HookConsumerWidget {
         mainAxisSpacing: 10.0,
         crossAxisSpacing: 10.0,
         itemBuilder: (BuildContext context, int index) {
-          // final AsyncValue<Movie> currentPopularPersonFromIndex = ref
-          //     .watch(paginatedSearchMoviesProvider(PaginatedSearchProviderArgs(
-          //         page: index ~/ 20, query: ref.watch(searchKeywordProvider))))
-          //     .whenData((pageData) => pageData.results[index % 20]);
-          final AsyncValue<Movie> currentMovie =
-              AsyncValue.data(dummyMovies[index]);
+          final AsyncValue<Movie> currentPopularPersonFromIndex = ref
+              .watch(paginatedSearchMoviesProvider(PaginatedSearchProviderArgs(
+                  page: index ~/ 20, query: ref.watch(searchKeywordProvider))))
+              .whenData((pageData) => pageData.results[index % 20]);
+          // final AsyncValue<Movie> currentMovie =
+          //     AsyncValue.data(dummyMovies[index]);
 
           return ProviderScope(
             overrides: [
-              currentPopularMovieProvider.overrideWithValue(currentMovie)
+              currentPopularMovieProvider.overrideWithValue(currentPopularPersonFromIndex)
             ],
             child: MovieTile(
               autofocus: false,

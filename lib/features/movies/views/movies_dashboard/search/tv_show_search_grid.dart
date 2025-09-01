@@ -91,6 +91,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
     final handleKeyPress = useCallback(
       (KeyEvent event) {
         if (event is KeyDownEvent || event is KeyRepeatEvent) {
+          isFocused.value = true;
           final crossAxisCount = ResponsiveWidget.isMediumScreen(context)
               ? 3
               : ResponsiveWidget.isSmallScreen(context)
@@ -111,6 +112,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
                 );
                 return true;
               }
+              isFocused.value = false;
               return false;
 
             case LogicalKeyboardKey.arrowDown:
@@ -133,6 +135,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
                 currentFocusedIndex.value--;
                 return true;
               }
+              isFocused.value = false;
               return false;
 
             case LogicalKeyboardKey.arrowRight:
@@ -144,9 +147,10 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
               return true;
 
             case LogicalKeyboardKey.select:
+
             case LogicalKeyboardKey.enter:
               // Navigate to TV show detail (handled by TvShowTile)
-              return false;
+              return true;
           }
         }
         return false;

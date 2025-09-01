@@ -41,25 +41,40 @@ class RawTvShowItem extends StatelessWidget {
   const RawTvShowItem({
     super.key,
     required this.autofocus,
+    required this.focusNode,
+    required this.isFocused,
     required this.show,
+    this.onFocusChanged,
+    this.onTvShowSelected,
   });
 
   final bool autofocus;
+  final FocusNode focusNode;
+  final bool isFocused;
   final TvShow show;
+  final ValueChanged<bool>? onFocusChanged;
+  final Function(TvShow show)? onTvShowSelected;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       autofocus: autofocus,
+      focusNode: focusNode,
       hoverColor: Colors.transparent,
       highlightColor: Colors.transparent,
       focusColor: Colors.transparent,
       splashColor: Colors.transparent,
       onTap: () {
-        AppRouter.navigateToPage(Routes.tvShowDetailsView, arguments: show.id);
+        if (onTvShowSelected != null) {
+          onTvShowSelected!(show);
+        } else {
+          AppRouter.navigateToPage(Routes.tvShowDetailsView,
+              arguments: show.id);
+        }
       },
+      onFocusChange: onFocusChanged,
       child: Builder(builder: (context) {
-        final bool hasFocus = Focus.of(context).hasPrimaryFocus;
+        final bool hasFocus = Focus.of(context).hasPrimaryFocus || isFocused;
         return Container(
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(

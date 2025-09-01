@@ -82,7 +82,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
 
     // Focus management state
     final currentFocusedIndex = useState(0);
-    final isFocused = useState(true);
+    final isFocused = useState(false);
 
     // Scroll controller for TV shows grid
     final tvShowsScrollController = useScrollController();
@@ -91,7 +91,6 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
     final handleKeyPress = useCallback(
       (KeyEvent event) {
         if (event is KeyDownEvent || event is KeyRepeatEvent) {
-          isFocused.value = true;
           final crossAxisCount = ResponsiveWidget.isMediumScreen(context)
               ? 3
               : ResponsiveWidget.isSmallScreen(context)
@@ -101,6 +100,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
           switch (event.logicalKey) {
             case LogicalKeyboardKey.arrowUp:
               // Navigate up in TV shows grid
+              isFocused.value = true;
               final newIndex = currentFocusedIndex.value - crossAxisCount;
               if (newIndex >= 0 && totalItems > 0) {
                 currentFocusedIndex.value = newIndex;
@@ -117,6 +117,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowDown:
               // Navigate down in TV shows grid
+              isFocused.value = true;
               final newIndex = currentFocusedIndex.value + crossAxisCount;
               if (newIndex < totalItems) {
                 currentFocusedIndex.value = newIndex;
@@ -131,6 +132,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowLeft:
               // Navigate left in TV shows grid
+              isFocused.value = true;
               if (currentFocusedIndex.value % crossAxisCount > 0) {
                 currentFocusedIndex.value--;
                 return true;
@@ -140,6 +142,7 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowRight:
               // Navigate right in TV shows grid
+              isFocused.value = true;
               if ((currentFocusedIndex.value + 1) % crossAxisCount != 0 &&
                   currentFocusedIndex.value + 1 < totalItems) {
                 currentFocusedIndex.value++;
@@ -147,7 +150,6 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
               return true;
 
             case LogicalKeyboardKey.select:
-
             case LogicalKeyboardKey.enter:
               // Navigate to TV show detail (handled by TvShowTile)
               return true;
@@ -158,15 +160,35 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
       [totalItems, currentFocusedIndex.value],
     );
 
+    // Watch for keyword changes and reset scroll/focus
+    final keyword = ref.watch(searchKeywordProvider);
+    useEffect(() {
+      // Reset scroll position and focused index when keyword changes
+      currentFocusedIndex.value = 0;
+      isFocused.value = false;
+
+      // Reset scroll position immediately
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (tvShowsScrollController.hasClients) {
+          tvShowsScrollController.jumpTo(0.0);
+        }
+      });
+
+      return null;
+    }, [keyword]);
+
     // Set up initial focus
     useEffect(() {
       if (totalItems > 0) {
         currentFocusedIndex.value = 0;
-        Future.microtask(() {
-          if (focusNodes.isNotEmpty) {
-            focusNodes[0].requestFocus();
-          }
-        });
+        // Only request focus if the grid is actually focused
+        if (isFocused.value) {
+          Future.microtask(() {
+            if (focusNodes.isNotEmpty) {
+              focusNodes[0].requestFocus();
+            }
+          });
+        }
       }
       return null;
     }, [totalItems]);
@@ -191,8 +213,6 @@ class _TvShowSearchGridWidget extends HookConsumerWidget {
           ? KeyEventResult.handled
           : KeyEventResult.ignored,
       child: AlignedGridView.count(
-        key: const PageStorageKey<String>(
-            'preserve_search_grid_scroll_and_focus_tvshows'),
         controller: tvShowsScrollController,
         itemCount: totalItems,
         crossAxisCount: ResponsiveWidget.isMediumScreen(context)

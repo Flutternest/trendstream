@@ -79,7 +79,7 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
 
     // Focus management state
     final currentFocusedIndex = useState(0);
-    final isFocused = useState(true);
+    final isFocused = useState(false);
 
     // Scroll controller for multi programs grid
     final multiProgramsScrollController = useScrollController();
@@ -88,7 +88,6 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
     final handleKeyPress = useCallback(
       (KeyEvent event) {
         if (event is KeyDownEvent || event is KeyRepeatEvent) {
-          isFocused.value = true;
           final crossAxisCount = ResponsiveWidget.isMediumScreen(context)
               ? 3
               : ResponsiveWidget.isSmallScreen(context)
@@ -98,6 +97,7 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
           switch (event.logicalKey) {
             case LogicalKeyboardKey.arrowUp:
               // Navigate up in multi programs grid
+              isFocused.value = true;
               final newIndex = currentFocusedIndex.value - crossAxisCount;
               if (newIndex >= 0 && totalItems > 0) {
                 currentFocusedIndex.value = newIndex;
@@ -114,6 +114,7 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowDown:
               // Navigate down in multi programs grid
+              isFocused.value = true;
               final newIndex = currentFocusedIndex.value + crossAxisCount;
               if (newIndex < totalItems) {
                 currentFocusedIndex.value = newIndex;
@@ -128,6 +129,7 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowLeft:
               // Navigate left in multi programs grid
+              isFocused.value = true;
               if (currentFocusedIndex.value % crossAxisCount > 0) {
                 currentFocusedIndex.value--;
                 return true;
@@ -137,6 +139,7 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowRight:
               // Navigate right in multi programs grid
+              isFocused.value = true;
               if ((currentFocusedIndex.value + 1) % crossAxisCount != 0 &&
                   currentFocusedIndex.value + 1 < totalItems) {
                 currentFocusedIndex.value++;
@@ -154,15 +157,35 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
       [totalItems, currentFocusedIndex.value],
     );
 
+    // Watch for keyword changes and reset scroll/focus
+    final keyword = ref.watch(searchKeywordProvider);
+    useEffect(() {
+      // Reset scroll position and focused index when keyword changes
+      currentFocusedIndex.value = 0;
+      isFocused.value = false;
+
+      // Reset scroll position immediately
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (multiProgramsScrollController.hasClients) {
+          multiProgramsScrollController.jumpTo(0.0);
+        }
+      });
+
+      return null;
+    }, [keyword]);
+
     // Set up initial focus
     useEffect(() {
       if (totalItems > 0) {
         currentFocusedIndex.value = 0;
-        Future.microtask(() {
-          if (focusNodes.isNotEmpty) {
-            focusNodes[0].requestFocus();
-          }
-        });
+        // Only request focus if the grid is actually focused
+        if (isFocused.value) {
+          Future.microtask(() {
+            if (focusNodes.isNotEmpty) {
+              focusNodes[0].requestFocus();
+            }
+          });
+        }
       }
       return null;
     }, [totalItems]);
@@ -187,8 +210,6 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
           ? KeyEventResult.handled
           : KeyEventResult.ignored,
       child: AlignedGridView.count(
-        key: const PageStorageKey<String>(
-            'preserve_search_grid_scroll_and_focus_multi'),
         controller: multiProgramsScrollController,
         itemCount: totalItems,
         crossAxisCount: ResponsiveWidget.isMediumScreen(context)

@@ -5,7 +5,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
-import 'package:latest_movies/core/data/dummy_data.dart';
 import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/shared_widgets/error_view.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
@@ -82,7 +81,7 @@ class _SearchGridWidget extends HookConsumerWidget {
 
     // Focus management state
     final currentFocusedIndex = useState(0);
-    final isFocused = useState(true);
+    final isFocused = useState(false);
 
     // Scroll controller for movies grid
     final moviesScrollController = useScrollController();
@@ -91,7 +90,6 @@ class _SearchGridWidget extends HookConsumerWidget {
     final handleKeyPress = useCallback(
       (KeyEvent event) {
         if (event is KeyDownEvent || event is KeyRepeatEvent) {
-          isFocused.value = true;
           final crossAxisCount = ResponsiveWidget.isMediumScreen(context)
               ? 3
               : ResponsiveWidget.isSmallScreen(context)
@@ -101,6 +99,7 @@ class _SearchGridWidget extends HookConsumerWidget {
           switch (event.logicalKey) {
             case LogicalKeyboardKey.arrowUp:
               // Navigate up in movies grid
+              isFocused.value = true;
               final newIndex = currentFocusedIndex.value - crossAxisCount;
               if (newIndex >= 0 && totalItems > 0) {
                 currentFocusedIndex.value = newIndex;
@@ -117,6 +116,7 @@ class _SearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowDown:
               // Navigate down in movies grid
+              isFocused.value = true;
               final newIndex = currentFocusedIndex.value + crossAxisCount;
               if (newIndex < totalItems) {
                 currentFocusedIndex.value = newIndex;
@@ -131,6 +131,7 @@ class _SearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowLeft:
               // Navigate left in movies grid
+              isFocused.value = true;
               if (currentFocusedIndex.value % crossAxisCount > 0) {
                 currentFocusedIndex.value--;
                 return true;
@@ -140,6 +141,7 @@ class _SearchGridWidget extends HookConsumerWidget {
 
             case LogicalKeyboardKey.arrowRight:
               // Navigate right in movies grid
+              isFocused.value = true;
               if ((currentFocusedIndex.value + 1) % crossAxisCount != 0 &&
                   currentFocusedIndex.value + 1 < totalItems) {
                 currentFocusedIndex.value++;
@@ -157,15 +159,35 @@ class _SearchGridWidget extends HookConsumerWidget {
       [totalItems, currentFocusedIndex.value],
     );
 
+    // Watch for keyword changes and reset scroll/focus
+    final keyword = ref.watch(searchKeywordProvider);
+    useEffect(() {
+      // Reset scroll position and focused index when keyword changes
+      currentFocusedIndex.value = 0;
+      isFocused.value = false;
+
+      // Reset scroll position immediately
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (moviesScrollController.hasClients) {
+          moviesScrollController.jumpTo(0.0);
+        }
+      });
+
+      return null;
+    }, [keyword]);
+
     // Set up initial focus
     useEffect(() {
       if (totalItems > 0) {
         currentFocusedIndex.value = 0;
-        Future.microtask(() {
-          if (focusNodes.isNotEmpty) {
-            focusNodes[0].requestFocus();
-          }
-        });
+        // Only request focus if the grid is actually focused
+        if (isFocused.value) {
+          Future.microtask(() {
+            if (focusNodes.isNotEmpty) {
+              focusNodes[0].requestFocus();
+            }
+          });
+        }
       }
       return null;
     }, [totalItems]);
@@ -190,8 +212,6 @@ class _SearchGridWidget extends HookConsumerWidget {
           ? KeyEventResult.handled
           : KeyEventResult.ignored,
       child: AlignedGridView.count(
-        key: const PageStorageKey<String>(
-            'preserve_search_grid_scroll_and_focus'),
         controller: moviesScrollController,
         itemCount: totalItems,
         crossAxisCount: ResponsiveWidget.isMediumScreen(context)
@@ -211,7 +231,8 @@ class _SearchGridWidget extends HookConsumerWidget {
 
           return ProviderScope(
             overrides: [
-              currentPopularMovieProvider.overrideWithValue(currentPopularPersonFromIndex)
+              currentPopularMovieProvider
+                  .overrideWithValue(currentPopularPersonFromIndex)
             ],
             child: MovieTile(
               autofocus: false,

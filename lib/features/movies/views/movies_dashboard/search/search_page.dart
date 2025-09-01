@@ -146,17 +146,10 @@ class SearchPage extends HookConsumerWidget {
                 Expanded(
                   child: FocusTraversalGroup(
                     child: Consumer(builder: (context, ref, child) {
-                      final keyword = ref.watch(searchKeywordProvider);
                       return switch (searchType) {
-                        SearchType.all => MultiProgramsSearchGrid(
-                            key: ValueKey(keyword),
-                          ),
-                        SearchType.movies => MovieSearchGrid(
-                            key: ValueKey(keyword),
-                          ),
-                        SearchType.tvShows => TvShowSearchGrid(
-                            key: ValueKey(keyword),
-                          ),
+                        SearchType.all => const MultiProgramsSearchGrid(),
+                        SearchType.movies => const MovieSearchGrid(),
+                        SearchType.tvShows => const TvShowSearchGrid(),
                       };
                     }),
                   ),

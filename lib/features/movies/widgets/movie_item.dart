@@ -4,7 +4,6 @@ import "package:flutter/material.dart";
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:latest_movies/core/constants/colors.dart';
-import 'package:latest_movies/core/extensions/context_extension.dart';
 import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/features/movies/controllers/current_popular_movies_provider.dart';
 
@@ -60,18 +59,25 @@ class RawMovieTile extends StatelessWidget {
   const RawMovieTile({
     super.key,
     required this.autofocus,
+    required this.focusNode,
+    required this.isFocused,
     required this.movie,
+    this.onFocusChanged,
     this.onMovieSelected,
   });
 
   final bool autofocus;
+  final FocusNode focusNode;
+  final bool isFocused;
   final Movie movie;
+  final ValueChanged<bool>? onFocusChanged;
   final Function(Movie movie)? onMovieSelected;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       autofocus: autofocus,
+      focusNode: focusNode,
       hoverColor: Colors.transparent,
       highlightColor: Colors.transparent,
       focusColor: Colors.transparent,
@@ -98,8 +104,9 @@ class RawMovieTile extends StatelessWidget {
           log('MovieTile: movieId is null');
         }
       },
+      onFocusChange: onFocusChanged,
       child: Builder(builder: (context) {
-        final bool hasFocus = Focus.of(context).hasPrimaryFocus;
+        final bool hasFocus = Focus.of(context).hasPrimaryFocus || isFocused;
         return Container(
           padding: const EdgeInsets.all(10.0),
           decoration: BoxDecoration(
@@ -269,13 +276,12 @@ class RawAsyncMovieTile extends ConsumerWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      validString(
-                          movie.releaseDate != null &&
-                                  movie.releaseDate!.isNotEmpty
-                              ? DateFormat("dd MMM yyyy").format(
-                                  DateFormat("yyyy-MM-dd")
-                                      .parse(movie.releaseDate!))
-                              : null),
+                      validString(movie.releaseDate != null &&
+                              movie.releaseDate!.isNotEmpty
+                          ? DateFormat("dd MMM yyyy").format(
+                              DateFormat("yyyy-MM-dd")
+                                  .parse(movie.releaseDate!))
+                          : null),
                       style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[700],

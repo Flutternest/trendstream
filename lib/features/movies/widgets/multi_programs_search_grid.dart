@@ -206,7 +206,9 @@ class _MultiProgramsSearchGridWidget extends HookConsumerWidget {
               currentMultiProgramProvider.overrideWithValue(currentShow)
             ],
             child: MultiProgramTile(
-              autofocus: isFocused.value && currentFocusedIndex.value == index,
+              autofocus: false,
+              focusNode: focusNodes[index],
+              isFocused: isFocused.value && currentFocusedIndex.value == index,
             ),
           );
         },

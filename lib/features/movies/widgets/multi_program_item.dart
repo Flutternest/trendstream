@@ -12,10 +12,14 @@ import '../../../core/shared_widgets/error_view.dart';
 class MultiProgramTile extends HookConsumerWidget {
   const MultiProgramTile({
     this.autofocus = false,
+    required this.focusNode,
+    required this.isFocused,
     Key? key,
   }) : super(key: key);
 
   final bool autofocus;
+  final FocusNode focusNode;
+  final bool isFocused;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,9 +33,12 @@ class MultiProgramTile extends HookConsumerWidget {
           return RawMovieTile(
             autofocus: autofocus,
             movie: show,
+            focusNode: focusNode,
+            isFocused: isFocused,
           );
         } else if (show is TvShow) {
-          return RawTvShowItem(autofocus: autofocus, show: show);
+          return RawTvShowItem(autofocus: autofocus, show: show,
+          );
         }
         return const SizedBox.shrink();
       },

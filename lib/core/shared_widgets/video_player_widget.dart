@@ -11,6 +11,7 @@ class VideoPlayerWidget extends ConsumerWidget {
   final double? aspectRatio;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
+  final bool isUsedInMiniPlayer;
 
   const VideoPlayerWidget({
     super.key,
@@ -21,6 +22,7 @@ class VideoPlayerWidget extends ConsumerWidget {
     this.aspectRatio,
     this.onTap,
     this.onDoubleTap,
+    this.isUsedInMiniPlayer = false,
   });
 
   @override
@@ -28,13 +30,18 @@ class VideoPlayerWidget extends ConsumerWidget {
     final videoControllerNotifier =
         ref.watch(videoPlayerControllerProvider(videoUrl));
 
-    // Initialize with muted volume only if autoPlay is false
-    if (!autoPlay && videoControllerNotifier.isInitialized) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (videoControllerNotifier.volume > 0.0) {
-          videoControllerNotifier.setVolume(0.0);
-        }
-      });
+    if (isUsedInMiniPlayer) {
+      // Initialize with muted volume only if autoPlay is false
+      if (!autoPlay && videoControllerNotifier.isInitialized) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (videoControllerNotifier.volume > 0.0) {
+            videoControllerNotifier.setVolume(0.0);
+          }
+          if (!videoControllerNotifier.isPlaying) {
+            videoControllerNotifier.play();
+          }
+        });
+      }
     }
 
     if (videoControllerNotifier.isLoading) {

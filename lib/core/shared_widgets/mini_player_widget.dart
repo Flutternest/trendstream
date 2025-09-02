@@ -27,31 +27,25 @@ class MiniPlayerWidget extends HookConsumerWidget {
       onKeyEvent: (node, event) {
         if (event.logicalKey == LogicalKeyboardKey.select ||
             event.logicalKey == LogicalKeyboardKey.enter) {
+          log("MiniPlayer key event: $event");
+          
           // Unmute video and navigate to full-screen player with Hero animation
-          ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
-          AppRouter.navigateToPage(
-            Routes.fullScreenPlayerView,
-            arguments: {
-              'videoUrl': videoUrl,
-              'heroTag': heroTag,
-            },
-          );
+          if (isFocussed.value) {
+            ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
+            AppRouter.navigateToPage(
+              Routes.fullScreenPlayerView,
+              arguments: {
+                'videoUrl': videoUrl,
+                'heroTag': heroTag,
+              },
+            );
+          }
+          isFocussed.value = false;
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
       },
       child: GestureDetector(
-        onTap: () {
-          // Unmute video and navigate to full-screen player with Hero animation
-          ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
-          AppRouter.navigateToPage(
-            Routes.fullScreenPlayerView,
-            arguments: {
-              'videoUrl': videoUrl,
-              'heroTag': heroTag,
-            },
-          );
-        },
         child: Container(
           decoration: BoxDecoration(
             border: Border.all(
@@ -66,6 +60,7 @@ class MiniPlayerWidget extends HookConsumerWidget {
             showControls: false,
             autoPlay: false,
             aspectRatio: 16 / 9,
+            isUsedInMiniPlayer: true,
           ),
         ),
       ),

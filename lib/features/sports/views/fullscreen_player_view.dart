@@ -29,6 +29,7 @@ class FullScreenPlayerView extends HookConsumerWidget {
     final currentFocusedIndex =
         useState(2); // Start with play/pause button (index 2)
     final isFocused = useState(false);
+    final isNavigatingBack = useState(false);
 
     // List of focus nodes for easy access
     final focusNodes = [backButtonFocus, seekBarFocus, playPauseFocus];
@@ -40,13 +41,12 @@ class FullScreenPlayerView extends HookConsumerWidget {
 
       // Auto-play video when entering full screen
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Unmute video when entering full screen
-        ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
-        // Focus on play/pause button initially
         Future.delayed(const Duration(milliseconds: 100), () {
           playPauseFocus.requestFocus();
           isFocused.value = true;
           log('Initial focus set to play/pause button');
+          ref.read(videoPlayerControllerProvider(videoUrl).notifier).play();
+          ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
         });
       });
 
@@ -54,9 +54,8 @@ class FullScreenPlayerView extends HookConsumerWidget {
       return () {
         log('Cleaning up full screen player view');
         SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-        ref.read(videoPlayerControllerProvider(videoUrl).notifier).mute();
       };
-    }, []);
+    }, const []);
 
     // Helper methods
     void togglePlayPause() {
@@ -76,8 +75,14 @@ class FullScreenPlayerView extends HookConsumerWidget {
     void handleBackNavigation() {
       log('Back navigation called');
       isFocused.value = false;
-      // Navigate back immediately
-      Navigator.of(context).pop();
+      isNavigatingBack.value = true;
+      ref.read(videoPlayerControllerProvider(videoUrl).notifier).mute();
+      // Use a small delay to prevent the mini player from receiving the same key event
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      });
     }
 
     // Handle keyboard navigation
@@ -145,7 +150,7 @@ class FullScreenPlayerView extends HookConsumerWidget {
 
             case LogicalKeyboardKey.select:
             case LogicalKeyboardKey.enter:
-              if (currentFocusedIndex.value == 0) {
+              if (currentFocusedIndex.value == 0 && !isNavigatingBack.value) {
                 // Back button
                 handleBackNavigation();
                 return true;
@@ -159,7 +164,12 @@ class FullScreenPlayerView extends HookConsumerWidget {
         }
         return false;
       },
-      [currentFocusedIndex.value, isFocused.value, focusNodes],
+      [
+        currentFocusedIndex.value,
+        isFocused.value,
+        isNavigatingBack.value,
+        focusNodes
+      ],
     );
 
     // Set focus to current focused index when section becomes focused
@@ -214,7 +224,8 @@ class FullScreenPlayerView extends HookConsumerWidget {
                           : null,
                     ),
                     child: IconButton(
-                      onPressed: handleBackNavigation,
+                      onPressed:
+                          isNavigatingBack.value ? null : handleBackNavigation,
                       icon: Icon(
                         Icons.arrow_back,
                         color: hasFocus ? Colors.white : Colors.grey[700],

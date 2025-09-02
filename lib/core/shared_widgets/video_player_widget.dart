@@ -30,20 +30,6 @@ class VideoPlayerWidget extends ConsumerWidget {
     final videoControllerNotifier =
         ref.watch(videoPlayerControllerProvider(videoUrl));
 
-    if (isUsedInMiniPlayer) {
-      // Initialize with muted volume only if autoPlay is false
-      if (!autoPlay && videoControllerNotifier.isInitialized) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (videoControllerNotifier.volume > 0.0) {
-            videoControllerNotifier.setVolume(0.0);
-          }
-          if (!videoControllerNotifier.isPlaying) {
-            videoControllerNotifier.play();
-          }
-        });
-      }
-    }
-
     if (videoControllerNotifier.isLoading) {
       return Hero(
         tag: heroTag,

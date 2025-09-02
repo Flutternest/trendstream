@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:video_player/video_player.dart';
@@ -54,8 +56,7 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      print(
-          'VideoPlayerController: Initializing controller for URL: $videoUrl');
+      log('VideoPlayerController: Initializing controller for URL: $videoUrl');
 
       _controller = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
       await _controller!.initialize();
@@ -71,10 +72,11 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
       _volume = _controller!.value.volume;
       _isMuted = _volume == 0.0;
 
-      print('VideoPlayerController: Controller initialized successfully');
+      log('VideoPlayerController: Controller initialized successfully');
+      await mute();
       notifyListeners();
     } catch (error, _) {
-      print('VideoPlayerController: Error initializing controller: $error');
+      log('VideoPlayerController: Error initializing controller: $error');
       _isLoading = false;
       _hasError = true;
       _errorMessage = error.toString();
@@ -116,38 +118,38 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
 
   Future<void> togglePlayPause() async {
     if (_controller != null && _isInitialized) {
-      print('VideoPlayerController: togglePlayPause - isPlaying: $_isPlaying');
+      log('VideoPlayerController: togglePlayPause - isPlaying: $_isPlaying');
       if (_isPlaying) {
         await _controller!.pause();
         _isPlaying = false;
-        print('VideoPlayerController: Paused video');
+        log('VideoPlayerController: Paused video');
       } else {
         await _controller!.play();
         _isPlaying = true;
-        print('VideoPlayerController: Playing video');
+        log('VideoPlayerController: Playing video');
       }
       notifyListeners();
     } else {
-      print(
-          'VideoPlayerController: togglePlayPause - controller not initialized');
+      log('VideoPlayerController: togglePlayPause - controller not initialized');
     }
   }
 
   Future<void> seekTo(Duration position) async {
     if (_controller != null && _isInitialized) {
-      print('VideoPlayerController: seekTo - position: $position');
+      log('VideoPlayerController: seekTo - position: $position');
       await _controller!.seekTo(position);
       _position = position;
-      print('VideoPlayerController: Seek completed');
+      log('VideoPlayerController: Seek completed');
       notifyListeners();
     } else {
-      print('VideoPlayerController: seekTo - controller not initialized');
+      log('VideoPlayerController: seekTo - controller not initialized');
     }
   }
 
   Future<void> setVolume(double volume) async {
     if (_controller != null && _isInitialized) {
       await _controller!.setVolume(volume);
+      log('VideoPlayerController: setVolume - volume: $volume');
       _volume = volume;
       _isMuted = volume == 0.0;
       notifyListeners();
@@ -157,6 +159,7 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
   Future<void> mute() async {
     if (_controller != null && _isInitialized) {
       await _controller!.setVolume(0.0);
+      log('VideoPlayerController: muted video - volume: ${_controller!.value.volume}');
       _volume = 0.0;
       _isMuted = true;
       notifyListeners();
@@ -166,6 +169,7 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
   Future<void> unmute() async {
     if (_controller != null && _isInitialized) {
       await _controller!.setVolume(1.0);
+      log('VideoPlayerController: unmuted video - volume: ${_controller!.value.volume}');
       _volume = 1.0;
       _isMuted = false;
       notifyListeners();

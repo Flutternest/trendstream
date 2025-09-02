@@ -141,8 +141,8 @@ class HomeView extends HookConsumerWidget {
                       return const MoviesGrid();
                     case SidebarOptions.tvShows:
                       return const TvShowsGrid();
-                    case SidebarOptions.tvShowsV3:
-                      return const TvShowsGridV3();
+                    // case SidebarOptions.tvShowsV3:
+                    //   return const TvShowsGridV3();
                     case SidebarOptions.adult:
                       return const AdultGrid();
                     case SidebarOptions.search:

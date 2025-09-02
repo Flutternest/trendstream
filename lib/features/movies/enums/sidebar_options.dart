@@ -3,7 +3,7 @@ enum SidebarOptions {
   home,
   movieV2, // Horizontal list of movies
   tvShows,
-  tvShowsV3,
+  // tvShowsV3,
   tvGuide,
   tvGuideLegacy,
   adult,

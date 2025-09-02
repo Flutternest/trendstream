@@ -179,20 +179,20 @@ class DashboardSideBar extends HookConsumerWidget {
                         .setSidebarOption(SidebarOptions.tvShows);
                   },
                 ),
-                DrawerItem(
-                  title: "${context.localisations.tvShows} V3",
-                  iconData: Icons.tv_outlined,
-                  selectedIconData: Icons.tv,
-                  focusNode: focusNodeMap[SidebarOptions.tvShowsV3]!,
-                  key: globalKeyMap[SidebarOptions.tvShowsV3]!,
-                  isSelected:
-                      sidebarState.sidebarOptions == SidebarOptions.tvShowsV3,
-                  onlyIcon: shouldHide,
-                  onTap: () {
-                    sidebarStateNotifier
-                        .setSidebarOption(SidebarOptions.tvShowsV3);
-                  },
-                ),
+                // DrawerItem(
+                //   title: "${context.localisations.tvShows} V3",
+                //   iconData: Icons.tv_outlined,
+                //   selectedIconData: Icons.tv,
+                //   focusNode: focusNodeMap[SidebarOptions.tvShowsV3]!,
+                //   key: globalKeyMap[SidebarOptions.tvShowsV3]!,
+                //   isSelected:
+                //       sidebarState.sidebarOptions == SidebarOptions.tvShowsV3,
+                //   onlyIcon: shouldHide,
+                //   onTap: () {
+                //     sidebarStateNotifier
+                //         .setSidebarOption(SidebarOptions.tvShowsV3);
+                //   },
+                // ),
                 DrawerItem(
                   title: context.localisations.tvGuide,
                   iconData: Icons.live_tv_outlined,

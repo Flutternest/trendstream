@@ -1,0 +1,98 @@
+import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:latest_movies/core/providers/video_player_controller_provider.dart';
+import 'package:video_player/video_player.dart';
+
+class VideoPlayerWidget extends ConsumerWidget {
+  final String videoUrl;
+  final String heroTag;
+  final bool showControls;
+  final bool autoPlay;
+  final double? aspectRatio;
+  final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
+
+  const VideoPlayerWidget({
+    super.key,
+    required this.videoUrl,
+    required this.heroTag,
+    this.showControls = false,
+    this.autoPlay = false,
+    this.aspectRatio,
+    this.onTap,
+    this.onDoubleTap,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final videoControllerAsync =
+        ref.watch(videoPlayerControllerProvider(videoUrl));
+
+    return videoControllerAsync.when(
+      data: (controller) {
+        // Initialize with muted volume
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (controller.value.volume > 0.0) {
+            controller.setVolume(0.0);
+          }
+        });
+
+        return GestureDetector(
+          onTap: onTap,
+          onDoubleTap: onDoubleTap,
+          child: Hero(
+            tag: heroTag,
+            child: AspectRatio(
+              aspectRatio: aspectRatio ?? controller.value.aspectRatio,
+              child: VideoPlayer(controller),
+            ),
+          ),
+        );
+      },
+      loading: () => Hero(
+        tag: heroTag,
+        child: Container(
+          color: Colors.black,
+          child: const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+        ),
+      ),
+      error: (error, stackTrace) => Hero(
+        tag: heroTag,
+        child: Container(
+          color: Colors.black,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Error loading video',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white70,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

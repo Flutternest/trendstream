@@ -1,14 +1,12 @@
 import 'dart:developer';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:latest_movies/core/shared_widgets/loading_overlay.dart';
-import 'package:latest_movies/features/movies/controllers/native_player_controller.dart';
+import 'package:latest_movies/core/providers/video_player_controller_provider.dart';
+import 'package:latest_movies/core/router/router.dart';
+import 'package:latest_movies/core/shared_widgets/video_player_widget.dart';
 
 class MiniPlayerWidget extends HookConsumerWidget {
   final String videoUrl;
@@ -18,6 +16,7 @@ class MiniPlayerWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isFocussed = useState(false);
+    final heroTag = 'video_player_${videoUrl.hashCode}';
 
     return Focus(
       autofocus: false,
@@ -28,50 +27,46 @@ class MiniPlayerWidget extends HookConsumerWidget {
       onKeyEvent: (node, event) {
         if (event.logicalKey == LogicalKeyboardKey.select ||
             event.logicalKey == LogicalKeyboardKey.enter) {
-          ref
-              .read(nativePlayerCtrlProvider(NativePlayerControllerArgs(
-                loadingOverlay: LoadingOverlay.of(context),
-                videoUrl: videoUrl,
-              )))
-              .navigateToPlayer();
+          // Unmute video and navigate to full-screen player with Hero animation
+          ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
+          AppRouter.navigateToPage(
+            Routes.fullScreenPlayerView,
+            arguments: {
+              'videoUrl': videoUrl,
+              'heroTag': heroTag,
+            },
+          );
           return KeyEventResult.handled;
         }
         return KeyEventResult.ignored;
       },
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isFocussed.value ? Colors.white : Colors.transparent,
-            width: 2,
+      child: GestureDetector(
+        onTap: () {
+          // Unmute video and navigate to full-screen player with Hero animation
+          ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
+          AppRouter.navigateToPage(
+            Routes.fullScreenPlayerView,
+            arguments: {
+              'videoUrl': videoUrl,
+              'heroTag': heroTag,
+            },
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isFocussed.value ? Colors.white : Colors.transparent,
+              width: 2,
+            ),
           ),
-        ),
-        padding: const EdgeInsets.all(2),
-        child: PlatformViewLink(
-          viewType: 'mini-player-view',
-          surfaceFactory: (context, controller) {
-            return AndroidViewSurface(
-              controller: controller as AndroidViewController,
-              gestureRecognizers: const <Factory<
-                  OneSequenceGestureRecognizer>>{},
-              hitTestBehavior: PlatformViewHitTestBehavior.opaque,
-            );
-          },
-          onCreatePlatformView: (params) {
-            final controller = PlatformViewsService.initSurfaceAndroidView(
-              id: params.id,
-              viewType: 'mini-player-view',
-              layoutDirection: TextDirection.ltr,
-              creationParams: {'videoUrl': videoUrl},
-              creationParamsCodec: const StandardMessageCodec(),
-              onFocus: () {
-                log("MiniPlayer: onFocus called from Flutter");
-              },
-            )
-              ..addOnPlatformViewCreatedListener(params.onPlatformViewCreated)
-              ..create();
-
-            return controller;
-          },
+          padding: const EdgeInsets.all(2),
+          child: VideoPlayerWidget(
+            videoUrl: videoUrl,
+            heroTag: heroTag,
+            showControls: false,
+            autoPlay: false,
+            aspectRatio: 16 / 9,
+          ),
         ),
       ),
     );

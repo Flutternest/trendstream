@@ -18,6 +18,8 @@ class Routes {
 
   static const String youtubePlayerView = "/youtube-player-view";
 
+  static const String fullScreenPlayerView = "/fullscreen-player-view";
+
   static const String tvShowAllEpisodes = "/tv-show-all-episodes";
 
   static const String tvShowSeasons = "/tv-show-seasons";

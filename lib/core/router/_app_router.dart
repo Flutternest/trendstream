@@ -123,6 +123,16 @@ class AppRouter {
           settings: settings,
           fullscreenDialog: false,
         );
+      case Routes.fullScreenPlayerView:
+        final args = settings.arguments as Map<String, dynamic>;
+        return MaterialPageRoute<dynamic>(
+          builder: (_) => FullScreenPlayerView(
+            videoUrl: args['videoUrl'] as String,
+            heroTag: args['heroTag'] as String,
+          ),
+          settings: settings,
+          fullscreenDialog: true,
+        );
       case Routes.tvShowAllEpisodes:
         return MaterialPageRoute<dynamic>(
           builder: (_) => const TvShowAllEpisodes(),

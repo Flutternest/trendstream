@@ -45,7 +45,7 @@ class CategorySelector extends ConsumerWidget {
         );
       },
       error: (err, st) => const SizedBox.shrink(),
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const SizedBox.shrink(),
     );
   }
 }

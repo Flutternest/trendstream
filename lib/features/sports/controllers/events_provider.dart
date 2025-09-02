@@ -3,8 +3,7 @@ import 'package:latest_movies/features/sports/controllers/sports_categories_prov
 import 'package:latest_movies/features/sports/models/sports_event/sports_event.dart';
 import 'package:latest_movies/features/sports/repositories/sports_repository.dart';
 
-final sportsEventsProvider =
-    FutureProvider.autoDispose<List<SportsEvent>>((ref) async {
+final sportsEventsProvider = FutureProvider<List<SportsEvent>>((ref) async {
   final selectedCategory = ref.watch(selectedCategoryProvider);
 
   if (selectedCategory == null || selectedCategory.id == null) {

@@ -11,6 +11,7 @@ import 'package:latest_movies/features/sports/controllers/current_focused_progra
 import 'package:latest_movies/features/sports/controllers/events_provider.dart';
 import 'package:latest_movies/features/sports/widgtes/category_selector.dart';
 import 'package:latest_movies/features/sports/widgtes/current_sports_details.dart';
+import 'package:latest_movies/features/sports/widgtes/sports_list_shimmer.dart';
 import 'package:latest_movies/features/sports/widgtes/sports_program_list_tile.dart';
 import 'package:video_player/video_player.dart';
 
@@ -102,9 +103,7 @@ class _SportsPageState extends ConsumerState<SportsPage> {
                   );
                 },
                 error: (err, st) => ErrorView(error: err.toString()),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                loading: () => const SportsListShimmer(),
               ),
             ),
           ],

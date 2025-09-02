@@ -25,31 +25,20 @@ class VideoPlayerWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final videoControllerAsync =
+    final videoControllerNotifier =
         ref.watch(videoPlayerControllerProvider(videoUrl));
 
-    return videoControllerAsync.when(
-      data: (controller) {
-        // Initialize with muted volume
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (controller.value.volume > 0.0) {
-            controller.setVolume(0.0);
-          }
-        });
+    // Initialize with muted volume only if autoPlay is false
+    if (!autoPlay && videoControllerNotifier.isInitialized) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (videoControllerNotifier.volume > 0.0) {
+          videoControllerNotifier.setVolume(0.0);
+        }
+      });
+    }
 
-        return GestureDetector(
-          onTap: onTap,
-          onDoubleTap: onDoubleTap,
-          child: Hero(
-            tag: heroTag,
-            child: AspectRatio(
-              aspectRatio: aspectRatio ?? controller.value.aspectRatio,
-              child: VideoPlayer(controller),
-            ),
-          ),
-        );
-      },
-      loading: () => Hero(
+    if (videoControllerNotifier.isLoading) {
+      return Hero(
         tag: heroTag,
         child: Container(
           color: Colors.black,
@@ -59,8 +48,11 @@ class VideoPlayerWidget extends ConsumerWidget {
             ),
           ),
         ),
-      ),
-      error: (error, stackTrace) => Hero(
+      );
+    }
+
+    if (videoControllerNotifier.hasError) {
+      return Hero(
         tag: heroTag,
         child: Container(
           color: Colors.black,
@@ -82,7 +74,7 @@ class VideoPlayerWidget extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  error.toString(),
+                  videoControllerNotifier.errorMessage ?? 'Unknown error',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white70,
                       ),
@@ -90,6 +82,35 @@ class VideoPlayerWidget extends ConsumerWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      );
+    }
+
+    if (videoControllerNotifier.isInitialized &&
+        videoControllerNotifier.controller != null) {
+      return GestureDetector(
+        onTap: onTap,
+        onDoubleTap: onDoubleTap,
+        child: Hero(
+          tag: heroTag,
+          child: AspectRatio(
+            aspectRatio: aspectRatio ??
+                videoControllerNotifier.controller!.value.aspectRatio,
+            child: VideoPlayer(videoControllerNotifier.controller!),
+          ),
+        ),
+      );
+    }
+
+    // Fallback loading state
+    return Hero(
+      tag: heroTag,
+      child: Container(
+        color: Colors.black,
+        child: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
           ),
         ),
       ),

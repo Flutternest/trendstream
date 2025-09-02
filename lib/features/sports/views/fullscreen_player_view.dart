@@ -2,11 +2,13 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/providers/video_player_controller_provider.dart';
 import 'package:latest_movies/core/shared_widgets/video_player_widget.dart';
 
-class FullScreenPlayerView extends ConsumerStatefulWidget {
+class FullScreenPlayerView extends HookConsumerWidget {
   final String videoUrl;
   final String heroTag;
 
@@ -17,146 +19,166 @@ class FullScreenPlayerView extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<FullScreenPlayerView> createState() =>
-      _FullScreenPlayerViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Focus nodes for the three controls
+    final backButtonFocus = useMemoized(() => FocusNode());
+    final seekBarFocus = useMemoized(() => FocusNode());
+    final playPauseFocus = useMemoized(() => FocusNode());
 
-class _FullScreenPlayerViewState extends ConsumerState<FullScreenPlayerView> {
-  final FocusNode _backButtonFocus = FocusNode();
-  final FocusNode _seekBarFocus = FocusNode();
-  final FocusNode _playPauseFocus = FocusNode();
+    // Focus management state
+    final currentFocusedIndex =
+        useState(2); // Start with play/pause button (index 2)
+    final isFocused = useState(false);
 
-  @override
-  void initState() {
-    super.initState();
-    // Hide system UI for full screen
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+    // List of focus nodes for easy access
+    final focusNodes = [backButtonFocus, seekBarFocus, playPauseFocus];
 
-    // Auto-play video when entering full screen
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(videoPlayerControllerProvider(widget.videoUrl).notifier).play();
-      // Focus on play/pause button initially
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _playPauseFocus.requestFocus();
-        log('Initial focus set to play/pause button');
+    // Initialize system UI and video
+    useEffect(() {
+      // Hide system UI for full screen
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+
+      // Auto-play video when entering full screen
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Unmute video when entering full screen
+        ref.read(videoPlayerControllerProvider(videoUrl).notifier).unmute();
+        // Focus on play/pause button initially
+        Future.delayed(const Duration(milliseconds: 100), () {
+          playPauseFocus.requestFocus();
+          isFocused.value = true;
+          log('Initial focus set to play/pause button');
+        });
       });
-    });
-  }
 
-  @override
-  void dispose() {
-    // Restore system UI
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      // Cleanup function
+      return () {
+        log('Cleaning up full screen player view');
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+        ref.read(videoPlayerControllerProvider(videoUrl).notifier).mute();
+      };
+    }, []);
 
-    // Dispose focus nodes
-    _backButtonFocus.dispose();
-    _seekBarFocus.dispose();
-    _playPauseFocus.dispose();
-
-    // Mute video when leaving full screen
-    ref.read(videoPlayerControllerProvider(widget.videoUrl).notifier).mute();
-
-    super.dispose();
-  }
-
-  void _togglePlayPause() {
-    ref
-        .read(videoPlayerControllerProvider(widget.videoUrl).notifier)
-        .togglePlayPause();
-  }
-
-  void _seekTo(Duration position) {
-    ref
-        .read(videoPlayerControllerProvider(widget.videoUrl).notifier)
-        .seekTo(position);
-  }
-
-  bool _handleKeyEvent(KeyEvent event) {
-    if (event is KeyDownEvent) {
-      log('Key pressed: ${event.logicalKey}');
-      log('Back button focus: ${_backButtonFocus.hasFocus}');
-      log('Seek bar focus: ${_seekBarFocus.hasFocus}');
-      log('Play pause focus: ${_playPauseFocus.hasFocus}');
-
-      switch (event.logicalKey) {
-        case LogicalKeyboardKey.arrowUp:
-          if (_seekBarFocus.hasFocus) {
-            log('Moving focus from seek bar to back button');
-            _backButtonFocus.requestFocus();
-          } else if (_playPauseFocus.hasFocus) {
-            log('Moving focus from play/pause to seek bar');
-            _seekBarFocus.requestFocus();
-          } else if (!_backButtonFocus.hasFocus &&
-              !_seekBarFocus.hasFocus &&
-              !_playPauseFocus.hasFocus) {
-            // If no focus, start with play/pause
-            log('No focus detected, setting focus to play/pause');
-            _playPauseFocus.requestFocus();
-          }
-          break;
-        case LogicalKeyboardKey.arrowDown:
-          if (_backButtonFocus.hasFocus) {
-            log('Moving focus from back button to seek bar');
-            _seekBarFocus.requestFocus();
-          } else if (_seekBarFocus.hasFocus) {
-            log('Moving focus from seek bar to play/pause');
-            _playPauseFocus.requestFocus();
-          } else if (!_backButtonFocus.hasFocus &&
-              !_seekBarFocus.hasFocus &&
-              !_playPauseFocus.hasFocus) {
-            // If no focus, start with play/pause
-            log('No focus detected, setting focus to play/pause');
-            _playPauseFocus.requestFocus();
-          }
-          break;
-        case LogicalKeyboardKey.arrowLeft:
-          if (_seekBarFocus.hasFocus) {
-            // Handle seek backward
-            final controller =
-                ref.read(videoPlayerControllerProvider(widget.videoUrl));
-            controller.whenData((ctrl) {
-              final newPosition =
-                  ctrl.value.position - const Duration(seconds: 10);
-              _seekTo(newPosition.isNegative ? Duration.zero : newPosition);
-            });
-          }
-          break;
-        case LogicalKeyboardKey.arrowRight:
-          if (_seekBarFocus.hasFocus) {
-            // Handle seek forward
-            final controller =
-                ref.read(videoPlayerControllerProvider(widget.videoUrl));
-            controller.whenData((ctrl) {
-              final newPosition =
-                  ctrl.value.position + const Duration(seconds: 10);
-              _seekTo(newPosition > ctrl.value.duration
-                  ? ctrl.value.duration
-                  : newPosition);
-            });
-          }
-          break;
-        case LogicalKeyboardKey.select:
-        case LogicalKeyboardKey.enter:
-          if (_backButtonFocus.hasFocus) {
-            Navigator.of(context).pop();
-          } else if (_playPauseFocus.hasFocus) {
-            _togglePlayPause();
-          }
-          break;
-      }
+    // Helper methods
+    void togglePlayPause() {
+      log('Toggle play/pause called');
+      ref
+          .read(videoPlayerControllerProvider(videoUrl).notifier)
+          .togglePlayPause();
     }
-    return true;
-  }
 
-  @override
-  Widget build(BuildContext context) {
-    final videoControllerAsync =
-        ref.watch(videoPlayerControllerProvider(widget.videoUrl));
+    void seekTo(Duration position) {
+      log('Seek to called: $position');
+      ref
+          .read(videoPlayerControllerProvider(videoUrl).notifier)
+          .seekTo(position);
+    }
+
+    void handleBackNavigation() {
+      log('Back navigation called');
+      isFocused.value = false;
+      // Navigate back immediately
+      Navigator.of(context).pop();
+    }
+
+    // Handle keyboard navigation
+    final handleKeyPress = useCallback(
+      (KeyEvent event) {
+        if (event is KeyDownEvent || event is KeyRepeatEvent) {
+          log('Key pressed: ${event.logicalKey}');
+          log('Current focused index: ${currentFocusedIndex.value}');
+          log('Is focused: ${isFocused.value}');
+
+          switch (event.logicalKey) {
+            case LogicalKeyboardKey.arrowUp:
+              isFocused.value = true;
+              final newIndex = currentFocusedIndex.value - 1;
+              if (newIndex >= 0) {
+                currentFocusedIndex.value = newIndex;
+                focusNodes[newIndex].requestFocus();
+                return true;
+              }
+              isFocused.value = false;
+              return false;
+
+            case LogicalKeyboardKey.arrowDown:
+              isFocused.value = true;
+              final newIndex = currentFocusedIndex.value + 1;
+              if (newIndex < focusNodes.length) {
+                currentFocusedIndex.value = newIndex;
+                focusNodes[newIndex].requestFocus();
+                return true;
+              }
+              isFocused.value = false;
+              return false;
+
+            case LogicalKeyboardKey.arrowLeft:
+              if (currentFocusedIndex.value == 1) {
+                // Seek bar is focused
+                // Handle seek backward
+                final notifier =
+                    ref.read(videoPlayerControllerProvider(videoUrl));
+                if (notifier.isInitialized) {
+                  final newPosition =
+                      notifier.position - const Duration(seconds: 10);
+                  seekTo(newPosition.isNegative ? Duration.zero : newPosition);
+                }
+                return true;
+              }
+              return false;
+
+            case LogicalKeyboardKey.arrowRight:
+              if (currentFocusedIndex.value == 1) {
+                // Seek bar is focused
+                // Handle seek forward
+                final notifier =
+                    ref.read(videoPlayerControllerProvider(videoUrl));
+                if (notifier.isInitialized) {
+                  final newPosition =
+                      notifier.position + const Duration(seconds: 10);
+                  seekTo(newPosition > notifier.duration
+                      ? notifier.duration
+                      : newPosition);
+                }
+                return true;
+              }
+              return false;
+
+            case LogicalKeyboardKey.select:
+            case LogicalKeyboardKey.enter:
+              if (currentFocusedIndex.value == 0) {
+                // Back button
+                handleBackNavigation();
+                return true;
+              } else if (currentFocusedIndex.value == 2) {
+                // Play/Pause button
+                togglePlayPause();
+                return true;
+              }
+              return false;
+          }
+        }
+        return false;
+      },
+      [currentFocusedIndex.value, isFocused.value, focusNodes],
+    );
+
+    // Set focus to current focused index when section becomes focused
+    useEffect(() {
+      if (isFocused.value && currentFocusedIndex.value < focusNodes.length) {
+        Future.microtask(() {
+          focusNodes[currentFocusedIndex.value].requestFocus();
+        });
+      }
+      return null;
+    }, [isFocused.value, currentFocusedIndex.value]);
+
+    final videoControllerNotifier =
+        ref.watch(videoPlayerControllerProvider(videoUrl));
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: Focus(
-        onKeyEvent: (node, event) => _handleKeyEvent(event)
+        onKeyEvent: (node, event) => handleKeyPress(event)
             ? KeyEventResult.handled
             : KeyEventResult.ignored,
         child: Stack(
@@ -164,8 +186,8 @@ class _FullScreenPlayerViewState extends ConsumerState<FullScreenPlayerView> {
             // Full screen video player with Hero animation
             Positioned.fill(
               child: VideoPlayerWidget(
-                videoUrl: widget.videoUrl,
-                heroTag: widget.heroTag,
+                videoUrl: videoUrl,
+                heroTag: heroTag,
                 showControls: false,
                 autoPlay: true,
               ),
@@ -176,27 +198,31 @@ class _FullScreenPlayerViewState extends ConsumerState<FullScreenPlayerView> {
               top: 40,
               left: 20,
               child: Focus(
-                focusNode: _backButtonFocus,
-                onFocusChange: (hasFocus) {
-                  log('Back button focus changed: $hasFocus');
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(8),
-                    border: _backButtonFocus.hasFocus
-                        ? Border.all(color: Colors.white, width: 2)
-                        : null,
-                  ),
-                  child: IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 28,
+                focusNode: backButtonFocus,
+                child: Builder(builder: (context) {
+                  final hasFocus =
+                      isFocused.value && currentFocusedIndex.value == 0;
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(8),
+                      border: hasFocus
+                          ? Border.all(
+                              width: 4,
+                              color: kPrimaryAccentColor,
+                            )
+                          : null,
                     ),
-                  ),
-                ),
+                    child: IconButton(
+                      onPressed: handleBackNavigation,
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: hasFocus ? Colors.white : Colors.grey[700],
+                        size: 28,
+                      ),
+                    ),
+                  );
+                }),
               ),
             ),
 
@@ -210,107 +236,127 @@ class _FullScreenPlayerViewState extends ConsumerState<FullScreenPlayerView> {
                 children: [
                   // Seek bar
                   Focus(
-                    focusNode: _seekBarFocus,
-                    onFocusChange: (hasFocus) {
-                      log('Seek bar focus changed: $hasFocus');
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                        border: _seekBarFocus.hasFocus
-                            ? Border.all(color: Colors.white, width: 2)
-                            : null,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: videoControllerAsync.when(
-                        data: (controller) => Row(
-                          children: [
-                            Text(
-                              _formatDuration(controller.value.position),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Expanded(
-                              child: SliderTheme(
-                                data: SliderTheme.of(context).copyWith(
-                                  activeTrackColor: Colors.white,
-                                  inactiveTrackColor:
-                                      Colors.white.withOpacity(0.3),
-                                  thumbColor: Colors.white,
-                                  overlayColor: Colors.white.withOpacity(0.2),
-                                  trackHeight: 3.0,
-                                ),
-                                child: Slider(
-                                  value:
-                                      controller.value.duration.inMilliseconds >
-                                              0
-                                          ? controller.value.position
-                                                  .inMilliseconds /
-                                              controller
-                                                  .value.duration.inMilliseconds
-                                          : 0.0,
-                                  onChanged: (value) {
-                                    final position = Duration(
-                                      milliseconds: (value *
-                                              controller.value.duration
-                                                  .inMilliseconds)
-                                          .round(),
-                                    );
-                                    _seekTo(position);
-                                  },
-                                ),
-                              ),
-                            ),
-                            Text(
-                              _formatDuration(controller.value.duration),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                    focusNode: seekBarFocus,
+                    child: Builder(builder: (context) {
+                      final hasFocus =
+                          isFocused.value && currentFocusedIndex.value == 1;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: hasFocus
+                              ? Border.all(
+                                  width: 4,
+                                  color: kPrimaryAccentColor,
+                                )
+                              : null,
                         ),
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-                    ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: videoControllerNotifier.isInitialized
+                            ? Row(
+                                children: [
+                                  Text(
+                                    _formatDuration(
+                                        videoControllerNotifier.position),
+                                    style: TextStyle(
+                                      color: hasFocus
+                                          ? Colors.white
+                                          : Colors.grey[700],
+                                      fontSize: 14,
+                                      fontWeight: hasFocus
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: SliderTheme(
+                                      data: SliderTheme.of(context).copyWith(
+                                        activeTrackColor: Colors.white,
+                                        inactiveTrackColor:
+                                            Colors.white.withOpacity(0.3),
+                                        thumbColor: Colors.white,
+                                        overlayColor:
+                                            Colors.white.withOpacity(0.2),
+                                        trackHeight: 3.0,
+                                      ),
+                                      child: Slider(
+                                        value: videoControllerNotifier
+                                                    .duration.inMilliseconds >
+                                                0
+                                            ? videoControllerNotifier
+                                                    .position.inMilliseconds /
+                                                videoControllerNotifier
+                                                    .duration.inMilliseconds
+                                            : 0.0,
+                                        onChanged: (value) {
+                                          final position = Duration(
+                                            milliseconds: (value *
+                                                    videoControllerNotifier
+                                                        .duration
+                                                        .inMilliseconds)
+                                                .round(),
+                                          );
+                                          seekTo(position);
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatDuration(
+                                        videoControllerNotifier.duration),
+                                    style: TextStyle(
+                                      color: hasFocus
+                                          ? Colors.white
+                                          : Colors.grey[700],
+                                      fontSize: 14,
+                                      fontWeight: hasFocus
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                      );
+                    }),
                   ),
 
                   const SizedBox(height: 5),
 
                   // Play/Pause button
                   Focus(
-                    focusNode: _playPauseFocus,
-                    onFocusChange: (hasFocus) {
-                      log('Play/Pause focus changed: $hasFocus');
-                    },
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(8),
-                        border: _playPauseFocus.hasFocus
-                            ? Border.all(color: Colors.white, width: 2)
-                            : null,
-                      ),
-                      child: videoControllerAsync.when(
-                        data: (controller) => IconButton(
-                          onPressed: _togglePlayPause,
-                          icon: Icon(
-                            controller.value.isPlaying
-                                ? Icons.pause
-                                : Icons.play_arrow,
-                            color: Colors.white,
-                            size: 32,
-                          ),
+                    focusNode: playPauseFocus,
+                    child: Builder(builder: (context) {
+                      final hasFocus =
+                          isFocused.value && currentFocusedIndex.value == 2;
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: hasFocus
+                              ? Border.all(
+                                  width: 4,
+                                  color: kPrimaryAccentColor,
+                                )
+                              : null,
                         ),
-                        loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
-                      ),
-                    ),
+                        child: videoControllerNotifier.isInitialized
+                            ? IconButton(
+                                onPressed: togglePlayPause,
+                                icon: Icon(
+                                  videoControllerNotifier.isPlaying
+                                      ? Icons.pause
+                                      : Icons.play_arrow,
+                                  color: hasFocus
+                                      ? Colors.white
+                                      : Colors.grey[700],
+                                  size: 32,
+                                ),
+                              )
+                            : const SizedBox.shrink(),
+                      );
+                    }),
                   ),
                 ],
               ),

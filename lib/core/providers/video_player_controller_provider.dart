@@ -5,15 +5,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
 // Provider for video player controller with URL as family parameter
-final videoPlayerControllerProvider =
-    ChangeNotifierProvider.family<VideoPlayerControllerNotifier, String>(
-        (ref, videoUrl) {
+final videoPlayerControllerProvider = ChangeNotifierProvider.autoDispose
+    .family<VideoPlayerControllerNotifier, String>((ref, videoUrl) {
   final notifier = VideoPlayerControllerNotifier(videoUrl);
-
-  // Auto-dispose when the provider is no longer used
-  ref.onDispose(() {
-    notifier.dispose();
-  });
 
   return notifier;
 });
@@ -74,6 +68,7 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
 
       log('VideoPlayerController: Controller initialized successfully');
       await mute();
+      await play();
       notifyListeners();
     } catch (error, _) {
       log('VideoPlayerController: Error initializing controller: $error');
@@ -87,6 +82,7 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
   void _videoControllerListener() {
     if (_controller != null && _controller!.value.isInitialized) {
       final value = _controller!.value;
+      log('VideoPlayerController: Controller value - $value');
 
       // Update state variables
       _duration = value.duration;
@@ -178,8 +174,9 @@ class VideoPlayerControllerNotifier extends ChangeNotifier {
 
   @override
   void dispose() {
+    log('VideoPlayerController: disposing');
+    super.dispose();
     _controller?.removeListener(_videoControllerListener);
     _controller?.dispose();
-    super.dispose();
   }
 }

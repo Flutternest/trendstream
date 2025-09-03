@@ -42,10 +42,7 @@ class _SportsPageState extends ConsumerState<SportsPage> {
               width: double.infinity,
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
-                onPressed: () {
-                  Debouncer(delay: const Duration(milliseconds: 500))
-                      .call(() => AppRouter.pop());
-                },
+                onPressed: AppRouter.pop,
                 style: TextButton.styleFrom(foregroundColor: Colors.white),
                 icon: const Icon(Icons.arrow_back),
                 label: Text(context.localisations.back),

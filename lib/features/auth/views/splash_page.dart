@@ -5,7 +5,6 @@ import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/constants/paths.dart';
 import 'package:latest_movies/core/services/shared_preferences_service.dart';
 import 'package:latest_movies/core/utilities/design_utility.dart';
-import 'package:localizely_sdk/localizely_sdk.dart';
 
 import '../../../core/router/router.dart';
 
@@ -40,11 +39,13 @@ class _SplashViewState extends ConsumerState<SplashView> {
     final referrer = remoteConfig.getString("referrer");
     final prefs = ref.read(sharedPreferencesServiceProvider);
 
-    if (userAgent.isNotEmpty && userAgent != prefs.sharedPreferences.getString("user_agent")) {
+    if (userAgent.isNotEmpty &&
+        userAgent != prefs.sharedPreferences.getString("user_agent")) {
       debugPrint("Setting User Agent: $userAgent");
       await prefs.sharedPreferences.setString("user_agent", userAgent);
     }
-    if (referrer.isNotEmpty && referrer != prefs.sharedPreferences.getString("referrer")) {
+    if (referrer.isNotEmpty &&
+        referrer != prefs.sharedPreferences.getString("referrer")) {
       debugPrint("Setting Referrer: $referrer");
       await prefs.sharedPreferences.setString("referrer", referrer);
     }

@@ -1,13 +1,6 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:latest_movies/core/shared_providers/device_details_provider.dart';
-import 'package:latest_movies/core/shared_providers/locale_provider.dart';
-import 'package:latest_movies/features/auth/views/splash_page.dart';
-import 'package:latest_movies/l10n/app_localisations.dart';
-import 'package:localizely_sdk/localizely_sdk.dart';
-import 'package:stack_trace/stack_trace.dart' as stack_trace;
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
@@ -17,7 +10,13 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:latest_movies/core/constants/colors.dart';
 import 'package:latest_movies/core/router/router.dart';
 import 'package:latest_movies/core/services/shared_preferences_service.dart';
+import 'package:latest_movies/core/shared_providers/device_details_provider.dart';
+import 'package:latest_movies/core/shared_providers/locale_provider.dart';
+import 'package:latest_movies/features/auth/views/splash_page.dart';
+import 'package:latest_movies/l10n/app_localisations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:stack_trace/stack_trace.dart' as stack_trace;
+
 // import 'package:flutter_gen/gen_l10n/localizely_localizations.dart';
 
 import 'firebase_options.dart';
@@ -34,9 +33,9 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  Localizely.init('22f76f7757494049859292dd0646abd6329fbedc',
-      'ff5a1d3ec7b5481f827d95c19417df37');
-  Localizely.setPreRelease(true);
+  // Localizely.init('22f76f7757494049859292dd0646abd6329fbedc',
+  //     'ff5a1d3ec7b5481f827d95c19417df37');
+  // Localizely.setPreRelease(true);
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeRight,
